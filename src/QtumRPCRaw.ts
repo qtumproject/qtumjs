@@ -6,7 +6,7 @@ const fetch = require("isomorphic-fetch")
 const btoa = require("btoa")
 const URL = require("url-parse")
 
-class RawQtumRPC {
+export class QtumRPCRaw {
   private _authToken: string
 
   constructor(private _baseURL: string) {
@@ -16,12 +16,12 @@ class RawQtumRPC {
     this._authToken = btoa(`${url.username}:${url.password}`)
   }
 
-  async rawCall(method: string, ...params: any[]) {
+  public async rawCall(method: string, ...params: any[]) {
     const res = await fetch(this._baseURL, {
       method: "POST",
       headers: {
-        'Accept': 'application/json',
-        "Authorization": `Basic ${this._authToken}`,
+        Accept: "application/json",
+        Authorization: `Basic ${this._authToken}`,
       },
       body: JSON.stringify({
         method,
@@ -50,45 +50,3 @@ class RawQtumRPC {
     return result
   }
 }
-
-interface GetInfoResult {
-  version: number,
-  protocolversion: number,
-  walletversion: number,
-  balance: number,
-  stake: number,
-  blocks: number,
-  timeoffset: number,
-  connections: number,
-  proxy: string,
-  difficulty: {
-    'proof-of-work': number,
-    'proof-of-stake': number,
-  },
-  testnet: boolean,
-  moneysupply: number,
-  keypoololdest: number,
-  keypoolsize: number,
-  paytxfee: number,
-  relayfee: number,
-  errors: string,
-}
-
-class QtumRPC extends RawQtumRPC {
-  getInfo(): Promise<GetInfoResult> {
-    return this.rawCall("getinfo")
-  }
-}
-
-async function main() {
-  const rpc = new QtumRPC("http://howard:yeh@localhost:13889")
-
-  let result = await rpc.getInfo()
-  return result
-}
-
-main().then(result => {
-  console.log("ok", result)
-}).catch((err) => {
-  console.log("err", err)
-})

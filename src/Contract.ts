@@ -5,6 +5,10 @@ import {
 } from "ethjs-abi"
 
 import {
+  ContractSendReceipt,
+} from "./ContractSendReceipt"
+
+import {
   ICallContractResult,
   IExecutionResult,
   ISendToContractResult,
@@ -126,4 +130,8 @@ export class Contract {
     })
   }
 
+  public async send(method: string, args: any[], opts = {}): Promise<ContractSendReceipt> {
+    const r = await this.rawSend(method, args, opts)
+    return new ContractSendReceipt(this.rpc, r)
+  }
 }

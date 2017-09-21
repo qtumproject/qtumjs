@@ -1,7 +1,7 @@
 {
   "name": "qtumjs",
-  "version": "1.0.0",
-  "main": "index.js",
+  "version": "0.0.1",
+  "main": "lib/index.js",
   "license": "MIT",
   "dependencies": {
     "@types/isomorphic-fetch": "^0.0.34",

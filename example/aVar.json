@@ -1,0 +1,38 @@
+{
+  "name": "AVar",
+  "deployName": "aVar",
+  "address": "05ce94dc5d7c07cb094aed438bf13e5615b82011",
+  "txid": "4ddd9eb2c66b6471cc804e93ea5f2a08cd5f62fe747fa075ffbbd3254e82faa3",
+  "abi": [
+    {
+      "name": "getA",
+      "type": "function",
+      "payable": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "constant": false
+    },
+    {
+      "name": "setA",
+      "type": "function",
+      "payable": false,
+      "inputs": [
+        {
+          "name": "_a",
+          "type": "uint256"
+        }
+      ],
+      "outputs": [],
+      "constant": false
+    }
+  ],
+  "bin": "6060604052341561000f57600080fd5b5b60b98061001e6000396000f300606060405263ffffffff7c0100000000000000000000000000000000000000000000000000000000600035041663d46300fd81146046578063ee919d50146068575b600080fd5b3415605057600080fd5b6056607d565b60405190815260200160405180910390f35b3415607257600080fd5b607b6004356084565b005b6000545b90565b60008190555b505600a165627a7a7230582040e87d0c62a01d8dd32ea10840e9f0b3628cb880d9a323b5c07709217591f9d90029",
+  "binhash": "42712271c9f5e5dcd27eaeb999bf4388eb80c55cd652980a7b22aa34f774d76b",
+  "createdAt": "2017-09-20T11:15:16.25028283+08:00",
+  "confirmed": true
+}

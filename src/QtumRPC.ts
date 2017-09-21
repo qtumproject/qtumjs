@@ -23,7 +23,7 @@ export interface IGetInfoResult {
   errors: string,
 }
 
-interface ISendToContractRequest {
+export interface ISendToContractRequest {
   /**
    * (required) The contract address that will receive the funds and data.
    */
@@ -60,7 +60,7 @@ interface ISendToContractRequest {
   // broadcast?: boolean
 }
 
-interface ISendToContractResult {
+export interface ISendToContractResult {
   /**
    * The transaction id.
    */
@@ -75,7 +75,7 @@ interface ISendToContractResult {
   hash160: string,
 }
 
-interface ICallContractRequest {
+export interface ICallContractRequest {
   /**
    * (required) The account address
    */
@@ -92,7 +92,7 @@ interface ICallContractRequest {
   senderAddress?: string
 }
 
-interface ICallContractResult {
+export interface ICallContractResult {
   address: string
   executionResult: {
     gasUsed: number,

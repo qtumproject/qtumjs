@@ -6,6 +6,7 @@ import {
 
 import {
   ICallContractResult,
+  IExecutionResult,
   ISendToContractResult,
   QtumRPC,
 } from "./QtumRPC"
@@ -19,6 +20,10 @@ interface IContractInfo {
    * Address of contract
    */
   address: string
+}
+
+interface IContractCallResult extends IExecutionResult {
+  [key: number]: any
 }
 
 export class Contract {
@@ -68,7 +73,9 @@ export class Contract {
     })
   }
 
-  public async call(method: string, args: any[] = [], opts = {}): Promise<any> {
+  public async call(method: string, args: any[] = [], opts = {}): Promise<IContractCallResult> {
+    // TODO support the named return values mechanism for decodeParams
+
     const r = await this.rawCall(method, args, opts)
 
     const exception = r.executionResult.excepted
@@ -78,7 +85,7 @@ export class Contract {
 
     const output = r.executionResult.output
     if (output === "") {
-      return null
+      return r.executionResult
     }
 
     const methodABI = this.callMethodsMap[method]
@@ -93,10 +100,7 @@ export class Contract {
     for (let i = 0; i < types.length; i++) {
       returnValues[i] = result[i]
     }
-    return returnValues
-
-    // TODO support the named return values mechanism
-
+    return Object.assign(returnValues, r.executionResult)
   }
 
   /**

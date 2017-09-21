@@ -92,18 +92,20 @@ export interface ICallContractRequest {
   senderAddress?: string
 }
 
+export interface IExecutionResult {
+  gasUsed: number,
+  excepted: string,
+  newAddress: string,
+  output: string,
+  codeDeposit: number,
+  gasRefunded: number,
+  depositSize: number,
+  gasForDeposit: number,
+}
+
 export interface ICallContractResult {
   address: string
-  executionResult: {
-    gasUsed: number,
-    excepted: string,
-    newAddress: string,
-    output: string,
-    codeDeposit: number,
-    gasRefunded: number,
-    depositSize: number,
-    gasForDeposit: number,
-  }
+  executionResult: IExecutionResult,
   transactionReceipt: {
     stateRoot: string,
     gasUsed: string,

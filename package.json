@@ -3,6 +3,20 @@
   "version": "0.0.1",
   "main": "lib/index.js",
   "license": "MIT",
+  "scripts": {
+    "build:commonjs": "tsc",
+    "build:umd": "webpack --config webpack.config.js",
+    "build": "npm run build:commonjs && npm run build:umd"
+  },
+  "npmName": "qtumjs",
+  "npmFileMap": [
+    {
+      "basePath": "/dist/",
+      "files": [
+        "*.js"
+      ]
+    }
+  ],
   "dependencies": {
     "@types/isomorphic-fetch": "^0.0.34",
     "btoa": "^1.1.2",
@@ -11,7 +25,10 @@
     "url-parse": "^1.1.9"
   },
   "devDependencies": {
+    "@types/node": "^8.0.31",
+    "ts-loader": "^2.3.7",
     "tslint": "^5.7.0",
-    "typescript": "^2.5.2"
+    "typescript": "^2.5.2",
+    "webpack": "^3.6.0"
   }
 }

@@ -150,7 +150,7 @@ const sendToContractRequestDefaults = {
   amount: 0,
   gasLimit: 200000,
   // FIXME: Does not support string gasPrice although the doc says it does.
-  gasPrice: 0.00000001,
+  gasPrice: 0.0000004,
 }
 
 export class QtumRPC extends QtumRPCRaw {

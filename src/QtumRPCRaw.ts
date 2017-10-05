@@ -8,16 +8,17 @@ const URL = require("url-parse")
 
 export class QtumRPCRaw {
   private _authToken: string
+  private _origin: string
 
   constructor(private _baseURL: string) {
     const url = new URL(_baseURL)
-
+    this._origin = url.origin
     // unpadded base64
     this._authToken = btoa(`${url.username}:${url.password}`)
   }
 
   public async rawCall(method: string, ...params: any[]) {
-    const res = await fetch(this._baseURL, {
+    const res = await fetch(this._origin, {
       method: "POST",
       headers: {
         Accept: "application/json",

@@ -23,15 +23,23 @@ export interface IAuthorization {
 }
 
 export class QtumRPCRaw {
-  private _authToken: string
   private _origin: string
   private idNonce: number
+  private _reqHeaders: { [key: string]: string }
 
   constructor(private _baseURL: string) {
     const url = new URL(_baseURL)
     this._origin = url.origin
-    // unpadded base64
-    this._authToken = btoa(`${url.username}:${url.password}`)
+
+    this._reqHeaders = {
+      "Accept": "application/json",
+      "Content-Type": "application/json",
+    }
+
+    if (url.username !== "" || url.password !== "") {
+      const authToken = btoa(`${url.username}:${url.password}`)
+      this._reqHeaders.Authorization = `Basic ${authToken}`
+    }
   }
 
   public async rawCall(method: string, ...params: any[]) {
@@ -42,6 +50,11 @@ export class QtumRPCRaw {
     }
 
     let res = await this.makeRPCCall(rpcCall)
+
+    if (res.status === 402) {
+      const auth: IAuthorization = await res.json()
+      res = await this.authCall(auth.id, rpcCall)
+    }
 
     if (res.status === 401) {
       // body is empty
@@ -63,11 +76,6 @@ export class QtumRPCRaw {
       }
     }
 
-    if (res.status === 402) {
-      const auth: IAuthorization = await res.json()
-      res = await this.authCall(auth.id, rpcCall)
-    }
-
     const { result } = await res.json()
     return result
   }
@@ -75,11 +83,7 @@ export class QtumRPCRaw {
   private makeRPCCall(rpcCall: IJSONRPCRequest): Promise<any> {
     return fetch(`${this._origin}/`, {
       method: "POST",
-      headers: {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-        "Authorization": `Basic ${this._authToken}`,
-      },
+      headers: this._reqHeaders,
       body: JSON.stringify(rpcCall),
     })
   }

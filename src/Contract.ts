@@ -1,8 +1,15 @@
-import {
+// import {
+//   decodeParams,
+//   encodeMethod,
+//   IABI,
+// } from
+
+import { IABI, IETHABI } from "./ethjs-abi"
+
+const {
   decodeParams,
   encodeMethod,
-  IABI,
-} from "ethjs-abi"
+} = require("ethjs-abi") as IETHABI
 
 import {
   ContractSendReceipt,

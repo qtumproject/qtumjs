@@ -5,9 +5,16 @@
     ],
     "jsRules": {},
     "rules": {
-        "semicolon": [true, "never"],
+        "no-var-requires": false,
+        "semicolon": [
+            true,
+            "never"
+        ],
         "object-literal-sort-keys": false,
-        "variable-name": [true, "allow-leading-underscore"]
+        "variable-name": [
+            true,
+            "allow-leading-underscore"
+        ]
     },
     "rulesDirectory": []
 }

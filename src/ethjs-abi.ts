@@ -1,7 +1,4 @@
-// import { IABI } from "./abi"
-
-// tslint:disable-next-line:no-namespace
-
+// partial type definitions for ethjs-abi
 export interface IABI {
   name: string,
   type: string,

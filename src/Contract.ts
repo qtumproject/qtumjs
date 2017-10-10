@@ -15,7 +15,7 @@ import {
   QtumRPC,
 } from "./QtumRPC"
 
-interface IContractInfo {
+export interface IContractInfo {
   /**
    * Contract ABI methods
    */
@@ -26,7 +26,7 @@ interface IContractInfo {
   address: string
 }
 
-interface IContractCallResult extends IExecutionResult {
+export interface IContractCallResult extends IExecutionResult {
   [key: number]: any
 }
 

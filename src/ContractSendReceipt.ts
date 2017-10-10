@@ -3,6 +3,8 @@ import {
   QtumRPC,
 } from "./QtumRPC"
 
+import { sleep } from "./sleep"
+
 export class ContractSendReceipt {
   public txid: string
   public sender: string
@@ -33,10 +35,4 @@ export class ContractSendReceipt {
       await sleep(timeout)
     }
   }
-}
-
-async function sleep(ms: number) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms)
-  })
 }

@@ -116,7 +116,7 @@ export interface ICallContractResult {
   }
 }
 
-interface IGetTransactionRequest {
+export interface IGetTransactionRequest {
   /**
    * The transaction id
    */
@@ -128,7 +128,7 @@ interface IGetTransactionRequest {
   include_watchonly?: boolean
 }
 
-interface IGetTransactionResult {
+export interface IGetTransactionResult {
   amount: number,
   fee: number,
   confirmations: number,

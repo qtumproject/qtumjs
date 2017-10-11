@@ -68,12 +68,8 @@ export class QtumRPCRaw {
 
     // 500 for other errors
     if (res.status === 500) {
-      const { error } = await res.json()
-      if (typeof error !== "undefined") {
-        throw new Error(`[${error.code}] ${error.message}`)
-      } else {
-        throw new Error(JSON.stringify(error))
-      }
+      const error = await res.json()
+      throw new Error(`[${error.code}] ${error.message}`)
     }
 
     const { result } = await res.json()

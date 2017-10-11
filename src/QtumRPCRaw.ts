@@ -85,32 +85,25 @@ export class QtumRPCRaw {
   }
 
   private async authCall(authID: string, rpcCall: IJSONRPCRequest): Promise<any> {
-    // Repeatedly check /authorizations/:id until resolved
-    while (true) {
-      const res = await fetch(`${this._origin}/api/authorizations/${authID}`)
+    // long-poll an authorization until its state changes
+    const res = await fetch(`${this._origin}/api/authorizations/${authID}/onchange`)
 
-      if (res.status === 404) {
-        throw new Error(`Cannot find authorization: ${authID}`)
-      }
-
-      const auth: IAuthorization = await res.json()
-
-      if (auth.state === "denied") {
-        throw new Error(`Authorization denied: ${authID}`)
-      }
-
-      if (auth.state === "pending") {
-        await sleep(1000)
-        continue
-      }
-
-      if (auth.state === "accepted") {
-        return this.makeRPCCall({
-          ...rpcCall,
-          auth: auth.id,
-        })
-      }
+    if (res.status !== 200) {
+      const error = await res.json()
+      throw new Error(error.message)
     }
 
+    const auth: IAuthorization = await res.json()
+
+    if (auth.state === "denied") {
+      throw new Error(`Authorization denied: ${authID}`)
+    }
+
+    if (auth.state === "accepted") {
+      return this.makeRPCCall({
+        ...rpcCall,
+        auth: auth.id,
+      })
+    }
   }
 }

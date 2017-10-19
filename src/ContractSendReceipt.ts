@@ -18,7 +18,7 @@ export class ContractSendReceipt {
    * Check whether a transaction had been confirmed by n blocks.
    */
   public async check(nblock: number = 3): Promise<boolean> {
-    const tx = await this.rpc.getTransaction({txid: this.txid})
+    const tx = await this.rpc.getTransaction({ txid: this.txid })
     return tx.confirmations >= nblock
   }
 

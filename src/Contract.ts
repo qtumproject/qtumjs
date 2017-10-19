@@ -59,6 +59,18 @@ export class Contract {
     this.address = info.address
   }
 
+  public encodeParams(method: string, args: any[] = []): string {
+    const methodABI = this.callMethodsMap[method]
+    if (methodABI == null) {
+      throw new Error(`Unknown method to call: ${method}`)
+    }
+
+    // need to strip the leading "0x"
+    const calldata = encodeMethod(methodABI, args).slice(2)
+
+    return calldata
+  }
+
   /**
    * Call a contract method using ABI encoding, and return the RPC result as is. This
    * does not create a transaction. It is useful for gas estimation or getting results from
@@ -69,13 +81,9 @@ export class Contract {
    */
   public async rawCall(method: string, args: any[] = [], opts = {}): Promise<ICallContractResult> {
     // TODO opts: sender address
-    const methodABI = this.callMethodsMap[method]
-    if (methodABI == null) {
-      throw new Error(`Unknown method to call: ${method}`)
-    }
 
     // need to strip the leading "0x"
-    const calldata = encodeMethod(methodABI, args).slice(2)
+    const calldata = this.encodeParams(method, args)
 
     // TODO decode?
     return this.rpc.callContrct({

@@ -4,7 +4,7 @@
 //   IABI,
 // } from
 
-import { IABI, IETHABI } from "./ethjs-abi"
+import { IABIMethod, IETHABI } from "./ethjs-abi"
 
 const {
   decodeParams,
@@ -26,7 +26,7 @@ export interface IContractInfo {
   /**
    * Contract ABI methods
    */
-  abi: IABI[]
+  abi: IABIMethod[]
   /**
    * Address of contract
    */
@@ -41,8 +41,8 @@ export class Contract {
 
   // private abi: IABI[]
   private address: string
-  private callMethodsMap: { [key: string]: IABI } = {}
-  private sendMethodsMap: { [key: string]: IABI } = {}
+  private callMethodsMap: { [key: string]: IABIMethod } = {}
+  private sendMethodsMap: { [key: string]: IABIMethod } = {}
 
   constructor(private rpc: QtumRPC, info: IContractInfo) {
     for (const methodABI of info.abi) {

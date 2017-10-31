@@ -1,5 +1,5 @@
 // partial type definitions for ethjs-abi
-export interface IABI {
+export interface IABIMethod {
   name: string,
   type: string,
   payable: boolean,
@@ -23,7 +23,7 @@ export interface IResult {
 }
 
 export interface IETHABI {
-  encodeMethod(method: IABI, values: any[]): string
+  encodeMethod(method: IABIMethod, values: any[]): string
 
   decodeParams(types: string[], data: string, useNumberedParams?: boolean): IResult
   decodeParams(names: string[], types: string[], data: string, useNumberedParams?: boolean): IResult

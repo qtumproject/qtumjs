@@ -23,7 +23,7 @@ export interface IGetInfoResult {
   errors: string,
 }
 
-export interface ISendToContractRequest {
+export interface IRPCSendToContractRequest {
   /**
    * (required) The contract address that will receive the funds and data.
    */
@@ -60,7 +60,7 @@ export interface ISendToContractRequest {
   // broadcast?: boolean
 }
 
-export interface ISendToContractResult {
+export interface IRPCSendToContractResult {
   /**
    * The transaction id.
    */
@@ -75,7 +75,7 @@ export interface ISendToContractResult {
   hash160: string,
 }
 
-export interface ICallContractRequest {
+export interface IRPCCallContractRequest {
   /**
    * (required) The account address
    */
@@ -103,7 +103,7 @@ export interface IExecutionResult {
   gasForDeposit: number,
 }
 
-export interface ICallContractResult {
+export interface IRPCCallContractResult {
   address: string
   executionResult: IExecutionResult,
   transactionReceipt: {
@@ -116,7 +116,7 @@ export interface ICallContractResult {
   }
 }
 
-export interface IGetTransactionRequest {
+export interface IRPCGetTransactionRequest {
   /**
    * The transaction id
    */
@@ -128,7 +128,7 @@ export interface IGetTransactionRequest {
   include_watchonly?: boolean
 }
 
-export interface IGetTransactionResult {
+export interface IRPCGetTransactionResult {
   amount: number,
   fee: number,
   confirmations: number,
@@ -158,7 +158,7 @@ export class QtumRPC extends QtumRPCRaw {
     return this.rawCall("getinfo")
   }
 
-  public sendToContract(req: ISendToContractRequest): Promise<ISendToContractResult> {
+  public sendToContract(req: IRPCSendToContractRequest): Promise<IRPCSendToContractResult> {
     const vals = {
       ...sendToContractRequestDefaults,
       ...req,
@@ -179,7 +179,7 @@ export class QtumRPC extends QtumRPCRaw {
     return this.rawCall("sendtocontract", ...args)
   }
 
-  public callContrct(req: ICallContractRequest): Promise<ICallContractResult> {
+  public callContrct(req: IRPCCallContractRequest): Promise<IRPCCallContractResult> {
     const args = [
       req.address,
       req.datahex,
@@ -192,7 +192,7 @@ export class QtumRPC extends QtumRPCRaw {
     return this.rawCall("callcontract", ...args)
   }
 
-  public getTransaction(req: IGetTransactionRequest): Promise<IGetTransactionResult> {
+  public getTransaction(req: IRPCGetTransactionRequest): Promise<IRPCGetTransactionResult> {
     const args: any[] = [
       req.txid,
     ]

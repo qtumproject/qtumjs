@@ -1,5 +1,5 @@
 import {
-  ISendToContractResult,
+  IRPCSendToContractResult,
   QtumRPC,
 } from "./QtumRPC"
 
@@ -10,7 +10,7 @@ export class ContractSendReceipt {
   public sender: string
   public hash160: string
 
-  constructor(private rpc: QtumRPC, sendResult: ISendToContractResult) {
+  constructor(private rpc: QtumRPC, sendResult: IRPCSendToContractResult) {
     Object.assign(this, sendResult)
   }
 

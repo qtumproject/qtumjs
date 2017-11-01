@@ -10,9 +10,9 @@ import {
 } from "./ContractSendReceipt"
 
 import {
-  ICallContractResult,
   IExecutionResult,
-  ISendToContractResult,
+  IRPCCallContractResult,
+  IRPCSendToContractResult,
   QtumRPC,
 } from "./QtumRPC"
 
@@ -25,10 +25,19 @@ export interface IContractInfo {
    * Address of contract
    */
   address: string
+
+  name: string
+  deployName: string
+  txid: string
+  bin: string
+  binhash: string
+  createdAt: string // date string
+  confirmed: boolean
 }
 
-export interface IContractCallResult extends IExecutionResult {
-  [key: number]: any
+export interface IContractCallDecodedResult extends IRPCCallContractResult {
+  outputs: any[]
+  // [key: number]: any
 }
 
 export class Contract {
@@ -70,7 +79,7 @@ export class Contract {
    * @param method name of contract method to call
    * @param args arguments
    */
-  public async rawCall(method: string, args: any[] = [], opts = {}): Promise<ICallContractResult> {
+  public async rawCall(method: string, args: any[] = [], opts = {}): Promise<IRPCCallContractResult> {
     // TODO opts: sender address
 
     // need to strip the leading "0x"
@@ -83,7 +92,7 @@ export class Contract {
     })
   }
 
-  public async call(method: string, args: any[] = [], opts = {}): Promise<IContractCallResult> {
+  public async call(method: string, args: any[] = [], opts = {}): Promise<IContractCallDecodedResult> {
     // TODO support the named return values mechanism for decodeParams
 
     const r = await this.rawCall(method, args, opts)
@@ -94,13 +103,16 @@ export class Contract {
     }
 
     const output = r.executionResult.output
-    if (output === "") {
-      return r.executionResult
+
+    let decodedOutputs = []
+    if (output !== "") {
+      const methodABI = this.callMethodsMap[method]
+      decodedOutputs = decodeOutputs(methodABI, output)
     }
 
-    const methodABI = this.callMethodsMap[method]
-    const returnValues = decodeOutputs(methodABI, output)
-    return Object.assign(returnValues, r.executionResult)
+    return Object.assign(r, {
+      outputs: decodedOutputs,
+    })
   }
 
   /**
@@ -110,7 +122,7 @@ export class Contract {
    * @param method name of contract method to call
    * @param args arguments
    */
-  public async rawSend(method: string, args: any[], opts = {}): Promise<ISendToContractResult> {
+  public async rawSend(method: string, args: any[], opts = {}): Promise<IRPCSendToContractResult> {
     // TODO opts: gas limit, gas price, sender address
     const methodABI = this.sendMethodsMap[method]
     if (methodABI == null) {

@@ -1,15 +1,9 @@
-// import {
-//   decodeParams,
-//   encodeMethod,
-//   IABI,
-// } from
-
 import { IABIMethod, IETHABI } from "./ethjs-abi"
 
-const {
-  decodeParams,
-  encodeMethod,
-} = require("ethjs-abi") as IETHABI
+import {
+  decodeOutputs,
+  encodeInputs,
+} from "./abi"
 
 import {
   ContractSendReceipt,
@@ -65,10 +59,7 @@ export class Contract {
       throw new Error(`Unknown method to call: ${method}`)
     }
 
-    // need to strip the leading "0x"
-    const calldata = encodeMethod(methodABI, args).slice(2)
-
-    return calldata
+    return encodeInputs(methodABI, args)
   }
 
   /**
@@ -108,17 +99,7 @@ export class Contract {
     }
 
     const methodABI = this.callMethodsMap[method]
-    const types = methodABI.outputs.map((abiOutput) => abiOutput.type)
-    const result = decodeParams(types, "0x" + output)
-
-    // NB: Result is an "array-like" object like arguments. But apparently the following clone technique doesn't work.
-    // return Array.prototype.slice.call(result)
-
-    // Convert result to normal array...
-    const returnValues = []
-    for (let i = 0; i < types.length; i++) {
-      returnValues[i] = result[i]
-    }
+    const returnValues = decodeOutputs(methodABI, output)
     return Object.assign(returnValues, r.executionResult)
   }
 
@@ -136,8 +117,7 @@ export class Contract {
       throw new Error(`Unknown method to send: ${method}`)
     }
 
-    // need to strip the leading "0x"
-    const calldata = encodeMethod(methodABI, args).slice(2)
+    const calldata = encodeInputs(methodABI, args)
 
     return this.rpc.sendToContract({
       address: this.address,

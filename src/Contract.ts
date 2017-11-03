@@ -40,6 +40,35 @@ export interface IContractCallDecodedResult extends IRPCCallContractResult {
   // [key: number]: any
 }
 
+export interface IContractSendRequestOptions {
+  /**
+   * The amount in QTUM to send. eg 0.1, default: 0
+   */
+  amount?: number | string
+
+  /**
+   * gasLimit, default: 200000, max: 40000000
+   */
+  gasLimit?: number
+
+  /**
+   * Qtum price per gas unit, default: 0.00000001, min:0.00000001
+   */
+  gasPrice?: number | string
+
+  /**
+   * The quantum address that will be used as sender.
+   */
+  senderAddress?: string
+}
+
+export interface IContractCallRequestOptions {
+  /**
+   * The quantum address that will be used as sender.
+   */
+  senderAddress?: string
+}
+
 export class Contract {
 
   // private abi: IABI[]
@@ -79,7 +108,10 @@ export class Contract {
    * @param method name of contract method to call
    * @param args arguments
    */
-  public async rawCall(method: string, args: any[] = [], opts = {}): Promise<IRPCCallContractResult> {
+  public async rawCall(
+    method: string, args: any[] = [],
+    opts: IContractCallRequestOptions = {}):
+    Promise<IRPCCallContractResult> {
     // TODO opts: sender address
 
     // need to strip the leading "0x"
@@ -89,10 +121,15 @@ export class Contract {
     return this.rpc.callContrct({
       address: this.address,
       datahex: calldata,
+      ...opts,
     })
   }
 
-  public async call(method: string, args: any[] = [], opts = {}): Promise<IContractCallDecodedResult> {
+  public async call(
+    method: string,
+    args: any[] = [],
+    opts: IContractCallRequestOptions = {}):
+    Promise<IContractCallDecodedResult> {
     // TODO support the named return values mechanism for decodeParams
 
     const r = await this.rawCall(method, args, opts)
@@ -122,7 +159,11 @@ export class Contract {
    * @param method name of contract method to call
    * @param args arguments
    */
-  public async rawSend(method: string, args: any[], opts = {}): Promise<IRPCSendToContractResult> {
+  public async rawSend(
+    method: string,
+    args: any[],
+    opts: IContractSendRequestOptions = {}):
+    Promise<IRPCSendToContractResult> {
     // TODO opts: gas limit, gas price, sender address
     const methodABI = this.sendMethodsMap[method]
     if (methodABI == null) {
@@ -134,10 +175,14 @@ export class Contract {
     return this.rpc.sendToContract({
       address: this.address,
       datahex: calldata,
+      ...opts,
     })
   }
 
-  public async send(method: string, args: any[], opts = {}): Promise<ContractSendReceipt> {
+  public async send(
+    method: string, args: any[],
+    opts: IContractSendRequestOptions = {}):
+    Promise<ContractSendReceipt> {
     const r = await this.rawSend(method, args, opts)
     return new ContractSendReceipt(this.rpc, r)
   }

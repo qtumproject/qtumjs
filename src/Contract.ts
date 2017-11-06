@@ -6,8 +6,8 @@ import {
 } from "./abi"
 
 import {
-  ContractSendReceipt,
-} from "./ContractSendReceipt"
+  TransactionPromise,
+} from "./TransactionPromise"
 
 import {
   IExecutionResult,
@@ -182,8 +182,8 @@ export class Contract {
   public async send(
     method: string, args: any[],
     opts: IContractSendRequestOptions = {}):
-    Promise<ContractSendReceipt> {
+    Promise<TransactionPromise> {
     const r = await this.rawSend(method, args, opts)
-    return new ContractSendReceipt(this.rpc, r)
+    return new TransactionPromise(this.rpc, r)
   }
 }

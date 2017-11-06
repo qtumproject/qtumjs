@@ -6,7 +6,7 @@ import {
 
 import { sleep } from "./sleep"
 
-export class ContractSendReceipt {
+export class TransactionPromise {
   public txid: string
   public sender: string
   public hash160: string

@@ -1,5 +1,5 @@
 export * from "./Contract"
 export * from "./QtumRPC"
-export * from "./ContractSendReceipt"
+export * from "./TransactionPromise"
 export * from "./ethjs-abi"
 export { encodeInputs, decodeOutputs } from "./abi"

@@ -78,7 +78,7 @@ export class TransactionPromise {
           throw new Error("Cannot get transaction receipt")
         }
 
-        const ctx = new ConfirmedTransaction(tx, receipt)
+        const ctx = new ConfirmedTransaction(this.contract.info.abi, tx, receipt)
         if (txUpdated && tx.confirmations > confirmations) {
           confirmations = tx.confirmations
           txUpdated(ctx)

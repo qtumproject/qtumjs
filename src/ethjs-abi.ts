@@ -27,6 +27,13 @@ export interface ILogItem {
   topics: string[]
 }
 
+export interface IParsedLog extends IResult {
+  _eventName: string
+  [key: string]: any
+}
+
+export type LogDecoder = (logs: ILogItem[]) => IParsedLog[]
+
 export interface IETHABI {
   encodeMethod(method: IABIMethod, values: any[]): string
 
@@ -34,4 +41,6 @@ export interface IETHABI {
   decodeParams(names: string[], types: string[], data: string, useNumberedParams?: boolean): IResult
 
   decodeLogItem(eventObject: IABIMethod, log: ILogItem, useNumberedParams?: boolean): IResult
+
+  logDecoder(abi: IABIMethod[], useNumberedParams?: boolean): LogDecoder
 }

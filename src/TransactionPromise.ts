@@ -36,7 +36,7 @@ export class TransactionPromise {
     this.calldata = encodeInputs(methodABI, params)
   }
 
-  public async send() {
+  public async exec() {
     // only send the transaction request once
     if (this.sent) {
       return
@@ -53,7 +53,7 @@ export class TransactionPromise {
   }
 
   public then<T>(onfulfilled: (tx: ConfirmedTransaction) => T) {
-    return this.send().then(async () => {
+    return this.exec().then(async () => {
       const tx = await this.confirm(1)
       return tx
     })

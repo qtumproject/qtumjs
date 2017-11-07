@@ -146,6 +146,37 @@ export interface IRPCGetTransactionResult {
   hex: string,
 }
 
+export interface IRPCGetTransactionReceiptRequest {
+  /**
+   * The transaction id
+   */
+  txid: string
+}
+
+export interface IRPCGetTransactionReceiptResult {
+  blockHash: string
+  blockNumber: number
+
+  transactionHash: string
+  transactionIndex: number
+
+  from: string
+  to: string
+
+  cumulativeGasUsed: number
+  gasUsed: number
+
+  contractAddress: string
+
+  log: ITransactionLog[]
+}
+
+export interface ITransactionLog {
+  address: string
+  topics: string[],
+  data: string
+}
+
 const sendToContractRequestDefaults = {
   amount: 0,
   gasLimit: 200000,
@@ -202,5 +233,19 @@ export class QtumRPC extends QtumRPCRaw {
     }
 
     return this.rawCall("gettransaction", ...args)
+  }
+
+  public async getTransactionReceipt(req: IRPCGetTransactionRequest): Promise<IRPCGetTransactionReceiptResult | null> {
+    // The raw RPC API returns [] if tx id doesn't exist or not mined yet
+    // When transaction is mined, the API returns [receipt]
+    //
+    // We'll do the unwrapping here.
+    const result: IRPCGetTransactionReceiptResult[] = await this.rawCall("gettransactionreceipt", req.txid)
+
+    if (result.length === 0) {
+      return null
+    }
+
+    return result[0]
   }
 }

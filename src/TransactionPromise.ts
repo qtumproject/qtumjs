@@ -1,4 +1,5 @@
 import {
+  IRPCGetTransactionReceiptResult,
   IRPCGetTransactionResult,
   IRPCSendToContractResult,
   QtumRPC,
@@ -13,6 +14,8 @@ export class TransactionPromise {
 
   // the latest transaction object
   public tx?: IRPCGetTransactionResult
+
+  public receipt?: IRPCGetTransactionReceiptResult
 
   constructor(private rpc: QtumRPC, sendResult: IRPCSendToContractResult) {
     Object.assign(this, sendResult)
@@ -40,6 +43,15 @@ export class TransactionPromise {
         if (txUpdated) {
           txUpdated(tx)
         }
+      }
+
+      if (tx.confirmations > 0) {
+        const receipt = await this.rpc.getTransactionReceipt({ txid: tx.txid })
+        if (!receipt) {
+          throw new Error("Cannot get transaction receipt")
+        }
+
+        this.receipt = receipt
       }
 
       if (tx.confirmations >= nblock) {

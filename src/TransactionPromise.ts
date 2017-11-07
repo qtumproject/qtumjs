@@ -1,4 +1,17 @@
 import {
+  encodeInputs,
+} from "./abi"
+import {
+  Contract,
+  IContractSendRequestOptions,
+} from "./Contract"
+import {
+  IABIMethod,
+} from "./ethjs-abi"
+
+import { ConfirmedTransaction } from "./ConfirmedTransaction"
+
+import {
   IRPCGetTransactionReceiptResult,
   IRPCGetTransactionResult,
   IRPCSendToContractResult,
@@ -8,17 +21,42 @@ import {
 import { sleep } from "./sleep"
 
 export class TransactionPromise {
-  public txid: string
-  public sender: string
-  public hash160: string
+  public calldata: string
 
-  // the latest transaction object
-  public tx?: IRPCGetTransactionResult
+  private sent: boolean = false
+  private txid: string
 
-  public receipt?: IRPCGetTransactionReceiptResult
+  constructor(
+    private rpc: QtumRPC,
+    public contract: Contract,
+    public methodABI: IABIMethod,
+    public params: any[],
+    private opts: IContractSendRequestOptions,
+  ) {
+    this.calldata = encodeInputs(methodABI, params)
+  }
 
-  constructor(private rpc: QtumRPC, sendResult: IRPCSendToContractResult) {
-    Object.assign(this, sendResult)
+  public async send() {
+    // only send the transaction request once
+    if (this.sent) {
+      return
+    }
+
+    this.sent = true
+    const { txid } = await this.rpc.sendToContract({
+      address: this.contract.address,
+      datahex: this.calldata,
+      ...this.opts,
+    })
+
+    this.txid = txid
+  }
+
+  public then<T>(onfulfilled: (tx: ConfirmedTransaction) => T) {
+    return this.send().then(async () => {
+      const tx = await this.confirm(1)
+      return tx
+    })
   }
 
   /**
@@ -27,60 +65,28 @@ export class TransactionPromise {
   public async confirm(
     nblock: number = 3,
     timeout: number = 3000,
-    txUpdated?: (tx: IRPCGetTransactionResult) => void): Promise<IRPCGetTransactionResult> {
+    txUpdated?: (tx: ConfirmedTransaction) => void): Promise<ConfirmedTransaction> {
 
-    if (this.tx && this.tx.confirmations > nblock) {
-      return this.tx
-    }
-
-    // if this.confirmed >
+    let confirmations = -1
     while (true) {
       const tx = await this.rpc.getTransaction({ txid: this.txid })
 
-      // update transaction if is newer
-      if (this.tx === undefined || tx.confirmations > this.tx.confirmations) {
-        this.tx = tx
-        if (txUpdated) {
-          txUpdated(tx)
-        }
-      }
-
       if (tx.confirmations > 0) {
         const receipt = await this.rpc.getTransactionReceipt({ txid: tx.txid })
+
         if (!receipt) {
           throw new Error("Cannot get transaction receipt")
         }
 
-        this.receipt = receipt
-      }
+        const ctx = new ConfirmedTransaction(tx, receipt)
+        if (txUpdated && tx.confirmations > confirmations) {
+          confirmations = tx.confirmations
+          txUpdated(ctx)
+        }
 
-      if (tx.confirmations >= nblock) {
-        return tx
-      }
-
-      await sleep(timeout + Math.random() * 200)
-    }
-  }
-
-  /**
-   * Check whether a transaction had been confirmed by n blocks.
-   */
-  public async check(nblock: number = 3): Promise<boolean> {
-    const tx = await this.rpc.getTransaction({ txid: this.txid })
-    if (this.tx === undefined || tx.confirmations > this.tx.confirmations) {
-      this.tx = tx
-    }
-    return tx.confirmations >= nblock
-  }
-
-  /**
-   * Repeatedly checks a transaction for confirmation.
-   */
-  public async done(nblock: number = 3, timeout: number = 3000): Promise<void> {
-    while (true) {
-      const isConfirmed = await this.check(nblock)
-      if (isConfirmed) {
-        break
+        if (tx.confirmations >= nblock) {
+          return ctx
+        }
       }
 
       await sleep(timeout + Math.random() * 200)

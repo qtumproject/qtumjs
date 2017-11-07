@@ -72,11 +72,11 @@ export interface IContractCallRequestOptions {
 export class Contract {
 
   // private abi: IABI[]
-  private address: string
+  public address: string
   private callMethodsMap: { [key: string]: IABIMethod } = {}
   private sendMethodsMap: { [key: string]: IABIMethod } = {}
 
-  constructor(private rpc: QtumRPC, info: IContractInfo) {
+  constructor(private rpc: QtumRPC, public info: IContractInfo) {
     for (const methodABI of info.abi) {
       const name = methodABI.name
 
@@ -179,11 +179,17 @@ export class Contract {
     })
   }
 
-  public async send(
+  public send(
     method: string, args: any[],
     opts: IContractSendRequestOptions = {}):
-    Promise<TransactionPromise> {
-    const r = await this.rawSend(method, args, opts)
-    return new TransactionPromise(this.rpc, r)
+    TransactionPromise {
+    const methodABI = this.sendMethodsMap[method]
+    if (methodABI == null) {
+      throw new Error(`Unknown method to send: ${method}`)
+    }
+
+    const txp = new TransactionPromise(this.rpc, this, methodABI, args, opts)
+
+    return txp
   }
 }

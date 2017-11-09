@@ -52,11 +52,11 @@ export class TransactionPromise {
     this.txid = txid
   }
 
-  public then<T>(onfulfilled: (tx: ConfirmedTransaction) => T) {
+  public then<T>(onfulfilled: (tx: ConfirmedTransaction) => T, reject: (err: any) => void) {
     return this.exec().then(async () => {
       const tx = await this.confirm(1)
       return tx
-    })
+    }).then(onfulfilled).catch(reject)
   }
 
   /**

@@ -1,9 +1,4 @@
-
-// import fetch from "isomorphic-fetch"
-// import btoa from "btoa"
-// import URL from "url-parse"
-const fetch = require("isomorphic-fetch")
-// const btoa = require("btoa")
+import axios, {AxiosInstance, AxiosPromise, AxiosRequestConfig} from "axios"
 const URL = require("url-parse")
 
 import { sleep } from "./sleep"
@@ -23,26 +18,29 @@ export interface IAuthorization {
 }
 
 export class QtumRPCRaw {
-  private _origin: string
   private idNonce: number
-  private _reqHeaders: { [key: string]: string }
+  private _api: AxiosInstance
 
   constructor(private _baseURL: string) {
     const url = new URL(_baseURL)
-    this._origin = url.origin
 
-    this._reqHeaders = {
-      "Accept": "application/json",
-      "Content-Type": "application/json",
+    const config: AxiosRequestConfig = {
+      baseURL: url.origin,
+      // don't throw on non-200 response
+      validateStatus: () => true,
     }
 
-    if (url.username !== "" || url.password !== "") {
-      const authToken = btoa(`${url.username}:${url.password}`)
-      this._reqHeaders.Authorization = `Basic ${authToken}`
+    if (url.username !== "" && url.password !== "") {
+      config.auth = {
+        username: url.username,
+        password: url.password,
+      }
     }
+
+    this._api = axios.create(config)
   }
 
-  public async rawCall(method: string, ...params: any[]) {
+  public async rawCall(method: string, ...params: any[]): Promise<any> {
     const rpcCall: IJSONRPCRequest = {
       method,
       params,
@@ -52,7 +50,7 @@ export class QtumRPCRaw {
     let res = await this.makeRPCCall(rpcCall)
 
     if (res.status === 402) {
-      const auth: IAuthorization = await res.json()
+      const auth: IAuthorization = res.data
       res = await this.authCall(auth.id, rpcCall)
     }
 
@@ -68,7 +66,7 @@ export class QtumRPCRaw {
 
     // 500 for other errors
     if (res.status === 500) {
-      const eresult = await res.json()
+      const eresult = await res.data
 
       if (eresult.error) {
         const {
@@ -81,28 +79,25 @@ export class QtumRPCRaw {
       }
     }
 
-    const { result } = await res.json()
+    const { result } = await res.data
     return result
   }
 
-  private makeRPCCall(rpcCall: IJSONRPCRequest): Promise<any> {
-    return fetch(`${this._origin}/`, {
-      method: "POST",
-      headers: this._reqHeaders,
-      body: JSON.stringify(rpcCall),
-    })
+  private makeRPCCall(rpcCall: IJSONRPCRequest): AxiosPromise<any> {
+    return this._api.post("/", rpcCall)
   }
 
   private async authCall(authID: string, rpcCall: IJSONRPCRequest): Promise<any> {
     // long-poll an authorization until its state changes
-    const res = await fetch(`${this._origin}/api/authorizations/${authID}/onchange`)
+    const res = await this._api.post(`/api/authorizations/${authID}/onchange`)
+
+    const { data } = res
 
     if (res.status !== 200) {
-      const error = await res.json()
-      throw new Error(error.message)
+      throw new Error(data.message)
     }
 
-    const auth: IAuthorization = await res.json()
+    const auth: IAuthorization = data
 
     if (auth.state === "denied") {
       throw new Error(`Authorization denied: ${authID}`)

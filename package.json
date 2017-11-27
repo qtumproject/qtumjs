@@ -20,10 +20,9 @@
     }
   ],
   "dependencies": {
-    "@types/isomorphic-fetch": "^0.0.34",
+    "axios": "^0.17.1",
     "btoa": "^1.1.2",
     "ethjs-abi": "^0.2.1",
-    "isomorphic-fetch": "^2.2.1",
     "url-parse": "^1.1.9"
   },
   "devDependencies": {

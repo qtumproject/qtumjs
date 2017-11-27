@@ -153,7 +153,7 @@ export interface IRPCGetTransactionReceiptRequest {
   txid: string
 }
 
-export interface IRPCGetTransactionReceiptResult {
+export interface IRPCGetTransactionReceiptBase {
   blockHash: string
   blockNumber: number
 
@@ -167,7 +167,9 @@ export interface IRPCGetTransactionReceiptResult {
   gasUsed: number
 
   contractAddress: string
+}
 
+export interface IRPCGetTransactionReceiptResult extends IRPCGetTransactionReceiptBase {
   log: ITransactionLog[]
 }
 
@@ -182,6 +184,48 @@ const sendToContractRequestDefaults = {
   gasLimit: 200000,
   // FIXME: Does not support string gasPrice although the doc says it does.
   gasPrice: 0.0000004,
+}
+
+export interface IRPCWaitForLogsRequest {
+  /**
+   * The block number to start looking for logs.
+   */
+  from?: number | "latest",
+
+  /**
+   * The block number to stop looking for logs. If null, will wait indefinitely into the future.
+   */
+  to?: number | "latest",
+
+  /**
+   * Filter conditions for logs. Addresses and topics are specified as array of hexadecimal strings
+   */
+  filter?: ILogFilter,
+
+  /**
+   * Minimal number of confirmations before a log is returned
+   */
+  minconf?: number,
+}
+
+export interface ILogFilter {
+  addresses?: string[],
+  topics?: Array<string | null>,
+}
+
+export interface ILogEntry extends IRPCGetTransactionReceiptBase {
+  topics: string[],
+  data: string,
+}
+
+export interface IRPCWaitForLogsResult {
+  entries: ILogEntry[],
+  count: number,
+  nextblock: number,
+}
+
+export interface IPromiseCancel<T> extends Promise<T> {
+  cancel: () => void
 }
 
 export class QtumRPC extends QtumRPCRaw {
@@ -207,7 +251,7 @@ export class QtumRPC extends QtumRPCRaw {
       args.push(vals.senderAddress)
     }
 
-    return this.rawCall("sendtocontract", ...args)
+    return this.rawCall("sendtocontract", args)
   }
 
   public callContrct(req: IRPCCallContractRequest): Promise<IRPCCallContractResult> {
@@ -220,7 +264,7 @@ export class QtumRPC extends QtumRPCRaw {
       args.push(req.senderAddress)
     }
 
-    return this.rawCall("callcontract", ...args)
+    return this.rawCall("callcontract", args)
   }
 
   public getTransaction(req: IRPCGetTransactionRequest): Promise<IRPCGetTransactionResult> {
@@ -232,7 +276,7 @@ export class QtumRPC extends QtumRPCRaw {
       args.push(req.include_watchonly)
     }
 
-    return this.rawCall("gettransaction", ...args)
+    return this.rawCall("gettransaction", args)
   }
 
   public async getTransactionReceipt(req: IRPCGetTransactionRequest): Promise<IRPCGetTransactionReceiptResult | null> {
@@ -240,12 +284,32 @@ export class QtumRPC extends QtumRPCRaw {
     // When transaction is mined, the API returns [receipt]
     //
     // We'll do the unwrapping here.
-    const result: IRPCGetTransactionReceiptResult[] = await this.rawCall("gettransactionreceipt", req.txid)
+    const result: IRPCGetTransactionReceiptResult[] = await this.rawCall("gettransactionreceipt", [req.txid])
 
     if (result.length === 0) {
       return null
     }
 
     return result[0]
+  }
+
+  /**
+   * Long-poll request to get logs. Cancel the returned promise to terminate polling early.
+   */
+  public waitforlogs(req: IRPCWaitForLogsRequest): IPromiseCancel<IRPCWaitForLogsResult> {
+    const args = [
+      req.from,
+      req.to,
+      req.filter,
+      req.minconf,
+    ]
+
+    const cancelTokenSource = this.cancelTokenSource()
+
+    const p = this.rawCall("waitforlogs", args, { cancelToken: cancelTokenSource.token })
+
+    return Object.assign(p, {
+      cancel: cancelTokenSource.cancel.bind(cancelTokenSource),
+    }) as any
   }
 }

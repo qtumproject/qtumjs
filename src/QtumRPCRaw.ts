@@ -1,4 +1,4 @@
-import axios, {AxiosInstance, AxiosPromise, AxiosRequestConfig} from "axios"
+import axios, { AxiosInstance, AxiosPromise, AxiosRequestConfig, CancelToken, CancelTokenSource } from "axios"
 const URL = require("url-parse")
 
 import { sleep } from "./sleep"
@@ -15,6 +15,10 @@ export interface IAuthorization {
   state: "pending" | "accepted" | "denied" | "consumed"
   request: IJSONRPCRequest
   createdAt: string
+}
+
+export interface IRPCCallOption {
+  cancelToken?: CancelToken,
 }
 
 export class QtumRPCRaw {
@@ -40,7 +44,15 @@ export class QtumRPCRaw {
     this._api = axios.create(config)
   }
 
-  public async rawCall(method: string, ...params: any[]): Promise<any> {
+  public cancelTokenSource(): CancelTokenSource {
+    return axios.CancelToken.source()
+  }
+
+  public async rawCall(
+    method: string,
+    params: any[] = [],
+    opts: IRPCCallOption = {},
+  ): Promise<any> {
     const rpcCall: IJSONRPCRequest = {
       method,
       params,

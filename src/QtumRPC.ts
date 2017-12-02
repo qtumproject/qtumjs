@@ -296,7 +296,7 @@ export class QtumRPC extends QtumRPCRaw {
   /**
    * Long-poll request to get logs. Cancel the returned promise to terminate polling early.
    */
-  public waitforlogs(req: IRPCWaitForLogsRequest): IPromiseCancel<IRPCWaitForLogsResult> {
+  public waitforlogs(req: IRPCWaitForLogsRequest = {}): IPromiseCancel<IRPCWaitForLogsResult> {
     const args = [
       req.from,
       req.to,

@@ -23,6 +23,7 @@
     "axios": "^0.17.1",
     "btoa": "^1.1.2",
     "ethjs-abi": "^0.2.1",
+    "eventemitter3": "^2.0.3",
     "url-parse": "^1.1.9"
   },
   "devDependencies": {

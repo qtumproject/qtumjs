@@ -101,7 +101,7 @@ export class QtumRPCRaw {
 
   private async authCall(authID: string, rpcCall: IJSONRPCRequest): Promise<any> {
     // long-poll an authorization until its state changes
-    const res = await this._api.post(`/api/authorizations/${authID}/onchange`)
+    const res = await this._api.get(`/api/authorizations/${authID}/onchange`)
 
     const { data } = res
 

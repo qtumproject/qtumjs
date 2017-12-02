@@ -126,6 +126,11 @@ export interface IRPCGetTransactionRequest {
    * (optional, default=false) Whether to include watch-only addresses in balance calculation and details[]
    */
   include_watchonly?: boolean
+
+  /**
+   * (optional, default=0) Wait for enough confirmations before returning
+   */
+  waitconf?: number
 }
 
 export interface IRPCGetTransactionResult {
@@ -229,6 +234,8 @@ export interface IPromiseCancel<T> extends Promise<T> {
 }
 
 export class QtumRPC extends QtumRPCRaw {
+  private _hasTxWaitSupport: boolean | undefined
+
   public getInfo(): Promise<IGetInfoResult> {
     return this.rawCall("getinfo")
   }
@@ -274,6 +281,12 @@ export class QtumRPC extends QtumRPCRaw {
 
     if (req.include_watchonly) {
       args.push(req.include_watchonly)
+    } else {
+      args.push(false)
+    }
+
+    if (req.waitconf) {
+      args.push(req.waitconf)
     }
 
     return this.rawCall("gettransaction", args)
@@ -311,5 +324,15 @@ export class QtumRPC extends QtumRPCRaw {
     return Object.assign(p, {
       cancel: cancelTokenSource.cancel.bind(cancelTokenSource),
     }) as any
+  }
+
+  public async checkTransactionWaitSupport(): Promise<boolean> {
+    if (this._hasTxWaitSupport !== undefined) {
+      return this._hasTxWaitSupport
+    }
+
+    const helpmsg: string = await this.rawCall("help", ["gettransaction"])
+    this._hasTxWaitSupport = helpmsg.split("\n")[0].indexOf("waitconf") !== -1
+    return this._hasTxWaitSupport
   }
 }

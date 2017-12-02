@@ -13,6 +13,7 @@ import { ConfirmedTransaction } from "./ConfirmedTransaction"
 
 import {
   IRPCGetTransactionReceiptResult,
+  IRPCGetTransactionRequest,
   IRPCGetTransactionResult,
   IRPCSendToContractResult,
   QtumRPC,
@@ -63,13 +64,27 @@ export class TransactionPromise {
    * Returns a transaction object that had been confirmed at least n times
    */
   public async confirm(
-    nblock: number = 3,
+    nConfirms: number = 3,
     timeout: number = 3000,
     txUpdated?: (tx: ConfirmedTransaction) => void): Promise<ConfirmedTransaction> {
 
-    let confirmations = -1
+    const hasTxWaitSupport = await this.rpc.checkTransactionWaitSupport()
+
+    // TODO: a way to notify if tx had been added to wallet (after getTransaction returns)
+
+    // if hasTxWaitSupport, make one long-poll per confirmation
+    let confirmations = 1
+    // if !hasTxWaitSupport, poll every interval until tx.confirmations increased
+    let lastConfirmation = 0
+
     while (true) {
-      const tx = await this.rpc.getTransaction({ txid: this.txid })
+      const req: IRPCGetTransactionRequest = { txid: this.txid }
+
+      if (hasTxWaitSupport) {
+        req.waitconf = confirmations
+      }
+
+      const tx = await this.rpc.getTransaction(req)
 
       if (tx.confirmations > 0) {
         const receipt = await this.rpc.getTransactionReceipt({ txid: tx.txid })
@@ -79,17 +94,26 @@ export class TransactionPromise {
         }
 
         const ctx = new ConfirmedTransaction(this.contract.info.abi, tx, receipt)
-        if (txUpdated && tx.confirmations > confirmations) {
+        if (txUpdated && tx.confirmations > lastConfirmation) {
+          // confirmation increased since last check
           confirmations = tx.confirmations
           txUpdated(ctx)
         }
 
-        if (tx.confirmations >= nblock) {
+        if (tx.confirmations >= nConfirms) {
+          // reached number of required confirmations. done
           return ctx
         }
       }
 
-      await sleep(timeout + Math.random() * 200)
+      lastConfirmation = tx.confirmations
+
+      if (hasTxWaitSupport) {
+        // long-poll for one additional confirmation
+        confirmations++
+      } else {
+        await sleep(timeout + Math.random() * 200)
+      }
     }
   }
 }

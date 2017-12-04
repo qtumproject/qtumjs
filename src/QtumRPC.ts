@@ -210,7 +210,7 @@ export class QtumRPC extends QtumRPCRaw {
     return this.rawCall("sendtocontract", ...args)
   }
 
-  public callContrct(req: IRPCCallContractRequest): Promise<IRPCCallContractResult> {
+  public callContract(req: IRPCCallContractRequest): Promise<IRPCCallContractResult> {
     const args = [
       req.address,
       req.datahex,

@@ -1,20 +1,42 @@
 import { IABIMethod, IETHABI } from "./ethjs-abi"
 
 import {
+  decodeLogs,
   decodeOutputs,
   encodeInputs,
 } from "./abi"
 
-import {
-  TransactionPromise,
-} from "./TransactionPromise"
-
+import { IDecodedLog, ITransactionLog } from "./index"
 import {
   IExecutionResult,
   IRPCCallContractResult,
+  IRPCGetTransactionReceiptBase,
+  IRPCGetTransactionReceiptResult,
+  IRPCGetTransactionResult,
   IRPCSendToContractResult,
   QtumRPC,
 } from "./QtumRPC"
+import {
+  TxReceiptConfirmationHandler,
+  TxReceiptPromise,
+} from "./TxReceiptPromise"
+
+export interface IContractSendTx {
+  method: string
+  txid: string
+}
+
+export type IContractSendTxConfirmationHandler = (
+  tx: IRPCGetTransactionResult,
+  receipt: IContractSendTxReceipt,
+) => any
+
+export type IContractSendTxConfirmFunction = (n?: number, handler?: IContractSendTxConfirmationHandler) => any
+
+export interface IContractSendTxConfirmable extends IRPCGetTransactionResult {
+  method: string
+  confirm: IContractSendTxConfirmFunction,
+}
 
 export interface IContractInfo {
   /**
@@ -67,6 +89,18 @@ export interface IContractCallRequestOptions {
    * The quantum address that will be used as sender.
    */
   senderAddress?: string
+}
+
+export interface IContractSendTxReceipt extends IRPCGetTransactionReceiptBase {
+  /**
+   * logs decoded using ABI
+   */
+  logs: IDecodedLog[],
+
+  /**
+   * undecoded logs
+   */
+  rawlogs: ITransactionLog[],
 }
 
 export class Contract {
@@ -179,17 +213,69 @@ export class Contract {
     })
   }
 
-  public send(
-    method: string, args: any[],
-    opts: IContractSendRequestOptions = {}):
-    TransactionPromise {
+  public async confirm(
+    tx: IContractSendTx,
+    confirm?: number,
+    onConfirm?: IContractSendTxConfirmationHandler,
+  ): Promise<IContractSendTxReceipt> {
+    const txrp = new TxReceiptPromise(this.rpc, tx.txid)
+
+    if (onConfirm) {
+      txrp.onConfirm((tx2, receipt2) => {
+        const sendTxReceipt = this._makeSendTxReceipt(receipt2)
+        onConfirm(tx2, sendTxReceipt)
+      })
+    }
+
+    const receipt = await txrp.confirm(confirm)
+
+    return this._makeSendTxReceipt(receipt)
+  }
+
+  public async send(
+    method: string,
+    args: any[],
+    opts: IContractSendRequestOptions = {},
+  ): Promise<IContractSendTxConfirmable> {
     const methodABI = this.sendMethodsMap[method]
+
     if (methodABI == null) {
       throw new Error(`Unknown method to send: ${method}`)
     }
 
-    const txp = new TransactionPromise(this.rpc, this, methodABI, args, opts)
+    const calldata = encodeInputs(methodABI, args)
 
-    return txp
+    const sent = await this.rpc.sendToContract({
+      datahex: calldata,
+      address: this.address,
+      ...opts,
+    })
+
+    const txid = sent.txid
+
+    const txinfo = await this.rpc.getTransaction({txid})
+
+    const sendTx = {
+      ...txinfo,
+      method,
+      confirm: (n?: number, handler?: IContractSendTxConfirmationHandler) => {
+        return this.confirm(sendTx, n, handler)
+      },
+    }
+
+    return sendTx
+  }
+
+  private _makeSendTxReceipt(receipt: IRPCGetTransactionReceiptResult): IContractSendTxReceipt {
+    // https://stackoverflow.com/a/34710102
+    // ...receiptNoLog will be a copy of receipt, without the `log` property
+    const {log: rawlogs, ...receiptNoLog} = receipt
+    const logs = decodeLogs(this.info.abi, rawlogs)
+
+    return {
+      ...receiptNoLog,
+      logs,
+      rawlogs,
+    }
   }
 }

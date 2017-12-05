@@ -10,7 +10,6 @@ if (typeof Buffer === "undefined") {
 export * from "./abi"
 export * from "./Contract"
 export * from "./QtumRPC"
-export * from "./TransactionPromise"
-export * from "./ConfirmedTransaction"
+export * from "./TxReceiptPromise"
 export * from "./LogsSubscriber"
 export * from "./ethjs-abi"

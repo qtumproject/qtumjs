@@ -14,7 +14,8 @@
         "variable-name": [
             true,
             "allow-leading-underscore"
-        ]
+        ],
+        "ordered-imports": false
     },
     "rulesDirectory": []
 }

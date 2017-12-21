@@ -22,6 +22,15 @@ function ensureHex0x(hexstr: string): string {
 }
 
 export function encodeInputs(method: IABIMethod, args: any[] = []): string {
+  args = args.map((arg, i) => {
+    const input = method.inputs[i]
+    if (input.type === "address") {
+      return ensureHex0x(arg)
+    }
+
+    return arg
+  })
+
   // slice to strip the leading "0x"
   const calldata = encodeMethod(method, args).slice(2)
   return calldata

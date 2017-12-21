@@ -5,10 +5,8 @@
   "types": "./lib/index.d.ts",
   "license": "MIT",
   "scripts": {
-    "build:commonjs": "tsc",
-    "build:commonjs.d.ts": "tsc --declaration",
-    "build:umd": "webpack --config webpack.config.js",
-    "build": "npm run build:commonjs && npm run build:commonjs.d.ts && npm run build:umd"
+    "build": "tsc",
+    "build:umd": "webpack --config webpack.config.js"
   },
   "npmName": "qtumjs",
   "npmFileMap": [

@@ -48,13 +48,13 @@ export interface IContractInfo {
    */
   address: string
 
-  name: string
-  deployName: string
-  txid: string
-  bin: string
-  binhash: string
-  createdAt: string // date string
-  confirmed: boolean
+  // name: string
+  // deployName: string
+  // txid: string
+  // bin: string
+  // binhash: string
+  // createdAt: string // date string
+  // confirmed: boolean
 
   sender: string
 }

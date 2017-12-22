@@ -56,7 +56,7 @@ export interface IContractInfo {
   // createdAt: string // date string
   // confirmed: boolean
 
-  sender: string
+  sender?: string
 }
 
 export interface IContractCallDecodedResult extends IRPCCallContractResult {
@@ -157,7 +157,7 @@ export class Contract {
     return this.rpc.callContrct({
       address: this.address,
       datahex: calldata,
-      senderAddress: this.info.sender,
+      senderAddress: opts.senderAddress || this.info.sender,
       ...opts,
     })
   }
@@ -212,7 +212,7 @@ export class Contract {
     return this.rpc.sendToContract({
       address: this.address,
       datahex: calldata,
-      senderAddress: this.info.sender,
+      senderAddress: opts.senderAddress || this.info.sender,
       ...opts,
     })
   }
@@ -252,7 +252,7 @@ export class Contract {
     const sent = await this.rpc.sendToContract({
       datahex: calldata,
       address: this.address,
-      senderAddress: this.info.sender,
+      senderAddress: opts.senderAddress || this.info.sender,
       ...opts,
     })
 

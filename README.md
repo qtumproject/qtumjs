@@ -11,7 +11,7 @@ npm install qtumjs
 Assuming that the following contract is deployed to the QTUM blockchain:
 
 ```solidity
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.18;
 
 contract AVar {
   uint256 a;
@@ -36,18 +36,26 @@ Now we want to change the contract's state with the setter `setA`, then use the 
 2. Wait for the transaction to be confirmed.
 3. Call getter `setA` to read the stored value.
 
-For testing purposes, I am running qtumd in regtest mode locally. It provides the RPC service on this URL:
+For testing purposes, I am running qtumd in regtest mode locally:
 
 ```
-http://howard:yeh@localhost:13889
+docker run -it --rm \
+  --name myapp \
+  -v `pwd`:/dapp \
+  -p 9899:9899 \
+  -p 9888:9888 \
+  -p 3889:3889 \
+  hayeah/qtumportal
 ```
+
+The RPC URL should be: http://qtum:test@localhost:3889
 
 The JavaScript example uses async/await (supported natively by Node 8+):
 
 ```js
 const { Contract, QtumRPC } = require("qtumjs")
 
-const rpc = new QtumRPC("http://howard:yeh@localhost:13889")
+const rpc = new QtumRPC("http://qtum:test@localhost:3889")
 
 async function main() {
   // Load the ABI and address of a deployed contract
@@ -59,21 +67,21 @@ async function main() {
   // Create a transaction that calls setA with a random integer
   const i = Math.floor(Math.random() * 100)
   console.log("setA", i)
-  const receipt = await foo.send("setA", [i])
+  const tx = await foo.send("setA", [i])
 
   // Wait for transaction to confirm (wait for 1 block)
-  console.log("txid", receipt.txid)
+  console.log("txid", tx.txid)
   console.log("waiting for transaction confirmation")
-  await receipt.done(1)
+  await tx.confirm(1)
 
   // Make an RPC call of a constant function
-  const callResult = await foo.call("getA")
+  const result = await foo.call("getA")
 
   return {
     // First return value
-    r0: callResult[0],
+    r0: result.outputs[0],
     // Other metadata about the call (e.g. gas used)
-    callResult,
+    result,
   }
 }
 

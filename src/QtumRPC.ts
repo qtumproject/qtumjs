@@ -229,6 +229,39 @@ export interface IRPCWaitForLogsResult {
   nextblock: number,
 }
 
+export interface IRPCSearchLogsRequest {
+  /**
+   * The number of the earliest block (latest may be given to mean the most recent block).
+   * (default = "latest")
+   */
+  fromBlock?: number | "latest"
+
+  /**
+   * The number of the latest block (-1 may be given to mean the most recent block).
+   * (default = -1)
+   */
+  toBlock?: number
+
+  /**
+   * An address or a list of addresses to only get logs from particular account(s).
+   */
+  addresses?: string[]
+
+  /**
+   * An array of values which must each appear in the log entries.
+   * The order is important, if you want to leave topics out use null, e.g. ["null", "0x00..."].
+   */
+  topics?: Array<string | null>
+
+  /**
+   * Minimal number of confirmations before a log is returned
+   * (default = 0)
+   */
+  minconf?: number
+}
+
+export type IRPCSearchLogsResult = IRPCGetTransactionReceiptResult[]
+
 export interface IPromiseCancel<T> extends Promise<T> {
   cancel: () => void
 }
@@ -324,6 +357,31 @@ export class QtumRPC extends QtumRPCRaw {
     return Object.assign(p, {
       cancel: cancelTokenSource.cancel.bind(cancelTokenSource),
     }) as any
+  }
+
+  public async searchlogs(_req: IRPCSearchLogsRequest = {}): Promise<IRPCSearchLogsResult> {
+    const searchlogsDefaults = {
+      fromBlock: "latest",
+      toBlock: -1,
+      addresses: [],
+      topics: [],
+      minconf: 0,
+    }
+
+    const req = {
+      searchlogsDefaults,
+      ..._req,
+    }
+
+    const args = [
+      req.fromBlock,
+      req.toBlock,
+      req.addresses,
+      req.topics,
+      req.minconf,
+    ]
+
+    return this.rawCall("searchlogs", args)
   }
 
   public async checkTransactionWaitSupport(): Promise<boolean> {

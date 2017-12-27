@@ -1,6 +1,8 @@
 import {
   IABIMethod,
   IETHABI,
+  ILogItem,
+  LogDecoder,
 } from "./ethjs-abi"
 
 const {
@@ -62,13 +64,54 @@ export interface IDecodedLog {
   [key: string]: any
 }
 
-export function decodeLogs(methods: IABIMethod[], logs: ITransactionLog[]): IDecodedLog[] {
+export class ContractLogDecoder {
+  private _decoder: LogDecoder
+
+  constructor(public abi: IABIMethod[]) {
+    this._decoder = logDecoder(abi)
+  }
+
+  public decode(rawlog: ILogItem): IDecodedLog | null {
+    const result = this._decoder([{
+      data: ensureHex0x(rawlog.data),
+      topics: rawlog.topics.map(ensureHex0x),
+    }])
+
+    if (result.length === 0) {
+      return null
+    }
+
+    const log = result[0]
+
+    const type = log._eventName
+
+    const logABI = this.abi.find((method) => method.name === type)
+
+    if (!logABI) {
+      throw new Error(`Cannot find ABI for event type: ${type}`)
+    }
+
+    const decodedLog: IDecodedLog = {
+      type,
+    }
+
+    // logABI.inputs.forEach(())
+    for (const input of logABI.inputs) {
+      decodedLog[input.name] = log[input.name] as any
+    }
+
+    return decodedLog
+  }
+}
+
+export function decodeLogs(methods: IABIMethod[], logs: ILogItem[]): IDecodedLog[] {
   const decoder = logDecoder(methods)
 
   // Add the 0x prefix to all hex strings, else abi parsing would fail
   const rawlogs = logs.map((log) => {
+    // console.log("rawlog", log)
     return {
-      address: ensureHex0x(log.address),
+      // address: ensureHex0x(log.address),
       data: ensureHex0x(log.data),
       topics: log.topics.map(ensureHex0x),
     }

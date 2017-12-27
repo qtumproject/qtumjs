@@ -1,12 +1,17 @@
-import { IABIMethod, IETHABI } from "./ethjs-abi"
+import { IABIMethod, IETHABI, LogDecoder } from "./ethjs-abi"
+
+const {
+  logDecoder,
+} = require("ethjs-abi") as IETHABI
 
 import {
   decodeLogs,
   decodeOutputs,
   encodeInputs,
+  ContractLogDecoder,
 } from "./abi"
 
-import { IDecodedLog, ITransactionLog } from "./index"
+import { IDecodedLog, ITransactionLog, IRPCSearchLogsRequest } from "./index"
 import {
   IExecutionResult,
   IRPCCallContractResult,
@@ -14,7 +19,10 @@ import {
   IRPCGetTransactionReceiptResult,
   IRPCGetTransactionResult,
   IRPCSendToContractResult,
+  IRPCWaitForLogsResult,
   QtumRPC,
+  IRPCWaitForLogsRequest,
+  ILogEntry,
 } from "./QtumRPC"
 import {
   TxReceiptConfirmationHandler,
@@ -57,6 +65,17 @@ export interface IContractInfo {
   // confirmed: boolean
 
   sender?: string
+}
+
+// IDeployedContractInfo has extra deployment information stored by solar
+export interface IDeployedContractInfo extends IContractInfo {
+  name: string
+  deployName: string
+  txid: string
+  bin: string
+  binhash: string
+  createdAt: string // date string
+  confirmed: boolean
 }
 
 export interface IContractCallDecodedResult extends IRPCCallContractResult {
@@ -105,12 +124,23 @@ export interface IContractSendTxReceipt extends IRPCGetTransactionReceiptBase {
   rawlogs: ITransactionLog[],
 }
 
+export interface IContractLogEntry extends ILogEntry {
+  event: IDecodedLog | null,
+}
+
+export interface IContractLogs {
+  entries: IContractLogEntry[],
+  count: number,
+  nextblock: number,
+}
+
 export class Contract {
 
   // private abi: IABI[]
   public address: string
   private callMethodsMap: { [key: string]: IABIMethod } = {}
   private sendMethodsMap: { [key: string]: IABIMethod } = {}
+  private _logDecoder: ContractLogDecoder
 
   constructor(private rpc: QtumRPC, public info: IContractInfo) {
     for (const methodABI of info.abi) {
@@ -269,6 +299,40 @@ export class Contract {
     }
 
     return sendTx
+  }
+
+  public async logs(req: IRPCWaitForLogsRequest = {}): Promise<IContractLogs> {
+    const filter = req.filter || {}
+    if (!filter.addresses) {
+      filter.addresses = [this.address]
+    }
+
+    const result = await this.rpc.waitforlogs({
+      ...req,
+      filter,
+    })
+
+    const entries = result.entries.map((entry) => {
+      const parsedLog = this.logDecoder.decode(entry)
+      return {
+        ...entry,
+        event: parsedLog,
+       }
+    })
+
+    return {
+      ...result,
+      entries,
+    }
+  }
+
+  private get logDecoder(): ContractLogDecoder {
+    if (this._logDecoder) {
+      return this._logDecoder
+    }
+
+    this._logDecoder = new ContractLogDecoder(this.info.abi)
+    return this._logDecoder
   }
 
   private _makeSendTxReceipt(receipt: IRPCGetTransactionReceiptResult): IContractSendTxReceipt {

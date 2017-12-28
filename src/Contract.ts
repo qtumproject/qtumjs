@@ -184,7 +184,7 @@ export class Contract {
     const calldata = this.encodeParams(method, args)
 
     // TODO decode?
-    return this.rpc.callContrct({
+    return this.rpc.callContract({
       address: this.address,
       datahex: calldata,
       senderAddress: opts.senderAddress || this.info.sender,

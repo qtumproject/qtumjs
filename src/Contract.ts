@@ -1,4 +1,5 @@
 import { IABIMethod, IETHABI, LogDecoder } from "./ethjs-abi"
+import { EventEmitter } from "eventemitter3"
 
 const {
   logDecoder,
@@ -324,6 +325,56 @@ export class Contract {
       ...result,
       entries,
     }
+  }
+
+  public onLog(fn: (entry: IContractLogEntry) => void, opts: IRPCWaitForLogsRequest = {}) {
+    let nextblock = opts.from || "latest"
+
+    const loop = async () => {
+      while (true) {
+        const result = await this.logs({
+          ...opts,
+          from: nextblock,
+        })
+
+        for (const entry of result.entries) {
+          fn(entry)
+        }
+
+        nextblock = result.nextblock
+      }
+    }
+
+    loop()
+  }
+
+  /**
+   * events API for getting logs
+   *
+   * logs = token.logEmitter({ minconf: 1 })
+   *
+   * logs.on("Mint", (logEntry: IContractLogEntry) => {
+   *   // ...
+   * })
+   *
+   * logs.on("Transfer", (logEntry: IContractLogEntry) => {
+   *   // ...
+   * })
+   *
+   * logs.on("?", () => {
+   *   // catch all for unparsed events not defined in ABI
+   * })
+   *
+   */
+  public logEmitter(opts: IRPCWaitForLogsRequest = {}): EventEmitter {
+    const emitter = new EventEmitter()
+
+    this.onLog((entry) => {
+      const key = (entry.event && entry.event.type) || "?"
+      emitter.emit(key, entry)
+    }, opts)
+
+    return emitter
   }
 
   private get logDecoder(): ContractLogDecoder {

@@ -125,6 +125,10 @@ export interface IContractSendTxReceipt extends IRPCGetTransactionReceiptBase {
   rawlogs: ITransactionLog[],
 }
 
+export interface IContractLog<T> extends ILogEntry {
+  event: T
+}
+
 export interface IContractLogEntry extends ILogEntry {
   event: IDecodedLog | null,
 }

@@ -133,6 +133,9 @@ export interface IRPCGetTransactionRequest {
   waitconf?: number
 }
 
+/**
+ * Basic information about a transaction submitted to the network.
+ */
 export interface IRPCGetTransactionResult {
   amount: number,
   fee: number,

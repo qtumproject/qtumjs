@@ -56,11 +56,18 @@ export function decodeOutputs(method: IABIMethod, outputData: string): any[] {
   return values
 }
 
+/**
+ * A decoded Solidity event log
+ */
 export interface IDecodedLog {
-  // type is a reserved keyword in Solidity, so we can expect it
-  // to be unused as an event parameter name
+  /**
+   * The event log's name
+   */
   type: string
 
+  /**
+   * Arguments to event log as key-value map
+   */
   [key: string]: any
 }
 

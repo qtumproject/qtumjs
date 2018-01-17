@@ -350,7 +350,22 @@ export class Contract {
     return sendTx
   }
 
+  /**
+   * Get contract event logs, up to the blockchain tip.
+   * @param req
+   */
   public async logs(req: IRPCWaitForLogsRequest = {}): Promise<IContractLogs> {
+    return this.waitLogs({
+      toBlock: "latest",
+      ...req,
+    })
+  }
+
+  /**
+   * Get contract event logs. Long-poll wait if no log is found.
+   * @param req (optional) IRPCWaitForLogsRequest
+   */
+  public async waitLogs(req: IRPCWaitForLogsRequest = {}): Promise<IContractLogs> {
     const filter = req.filter || {}
     if (!filter.addresses) {
       filter.addresses = [this.address]
@@ -376,13 +391,13 @@ export class Contract {
   }
 
   public onLog(fn: (entry: IContractLogEntry) => void, opts: IRPCWaitForLogsRequest = {}) {
-    let nextblock = opts.from || "latest"
+    let nextblock = opts.fromBlock || "latest"
 
     const loop = async () => {
       while (true) {
-        const result = await this.logs({
+        const result = await this.waitLogs({
           ...opts,
-          from: nextblock,
+          fromBlock: nextblock,
         })
 
         for (const entry of result.entries) {

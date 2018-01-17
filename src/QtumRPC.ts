@@ -198,12 +198,12 @@ export interface IRPCWaitForLogsRequest {
   /**
    * The block number to start looking for logs.
    */
-  from?: number | "latest",
+  fromBlock?: number | "latest",
 
   /**
    * The block number to stop looking for logs. If null, will wait indefinitely into the future.
    */
-  to?: number | "latest",
+  toBlock?: number | "latest",
 
   /**
    * Filter conditions for logs. Addresses and topics are specified as array of hexadecimal strings
@@ -347,8 +347,8 @@ export class QtumRPC extends QtumRPCRaw {
    */
   public waitforlogs(req: IRPCWaitForLogsRequest = {}): IPromiseCancel<IRPCWaitForLogsResult> {
     const args = [
-      req.from,
-      req.to,
+      req.fromBlock,
+      req.toBlock,
       req.filter,
       req.minconf,
     ]

@@ -413,6 +413,9 @@ export class Contract {
     }
   }
 
+  /**
+   * Subscribe to contract's events, using callback interface.
+   */
   public onLog(fn: (entry: IContractEventLog) => void, opts: IRPCWaitForLogsRequest = {}) {
     let nextblock = opts.fromBlock || "latest"
 
@@ -435,22 +438,7 @@ export class Contract {
   }
 
   /**
-   * events API for getting logs
-   *
-   * logs = token.logEmitter({ minconf: 1 })
-   *
-   * logs.on("Mint", (logEntry: IContractLogEntry) => {
-   *   // ...
-   * })
-   *
-   * logs.on("Transfer", (logEntry: IContractLogEntry) => {
-   *   // ...
-   * })
-   *
-   * logs.on("?", () => {
-   *   // catch all for unparsed events not defined in ABI
-   * })
-   *
+   * Subscribe to contract's events, use EventsEmitter interface.
    */
   public logEmitter(opts: IRPCWaitForLogsRequest = {}): EventEmitter {
     const emitter = new EventEmitter()

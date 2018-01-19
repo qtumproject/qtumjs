@@ -47,7 +47,8 @@ export type IContractSendConfirmationHandler = (
  * @param n Number of confirmations to wait for
  * @param handler The callback function invoked for each additional confirmation
  */
-export type IContractSendConfirmFunction = (n?: number, handler?: IContractSendConfirmationHandler) => any
+export type IContractSendConfirmFunction = (n?: number, handler?: IContractSendConfirmationHandler) =>
+  Promise<IContractSendReceipt>
 
 /**
  * Result of contract send.
@@ -297,11 +298,11 @@ export class Contract {
   }
 
   public async confirm(
-    tx: IContractSendTx,
+    txid: string,
     confirm?: number,
     onConfirm?: IContractSendConfirmationHandler,
   ): Promise<IContractSendReceipt> {
-    const txrp = new TxReceiptPromise(this.rpc, tx.txid)
+    const txrp = new TxReceiptPromise(this.rpc, txid)
 
     if (onConfirm) {
       txrp.onConfirm((tx2, receipt2) => {
@@ -343,7 +344,7 @@ export class Contract {
       ...txinfo,
       method,
       confirm: (n?: number, handler?: IContractSendConfirmationHandler) => {
-        return this.confirm(sendTx, n, handler)
+        return this.confirm(txid, n, handler)
       },
     }
 

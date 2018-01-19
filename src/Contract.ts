@@ -12,7 +12,7 @@ import {
   ContractLogDecoder,
 } from "./abi"
 
-import { IDecodedLog, ITransactionLog, IRPCSearchLogsRequest } from "./index"
+import { IDecodedSolidityEvent, ITransactionLog, IRPCSearchLogsRequest } from "./index"
 import {
   IExecutionResult,
   IRPCCallContractResult,
@@ -71,7 +71,7 @@ export interface IContractSendResult extends IRPCGetTransactionResult {
  */
 export interface IContractInfo {
   /**
-   * Contract's ABI definitions
+   * Contract's ABI definitions, produced by solc.
    */
   abi: IABIMethod[]
 
@@ -148,7 +148,7 @@ export interface IContractSendReceipt extends IRPCGetTransactionReceiptBase {
   /**
    * logs decoded using ABI
    */
-  logs: IDecodedLog[],
+  logs: IDecodedSolidityEvent[],
 
   /**
    * undecoded logs
@@ -160,14 +160,34 @@ export interface IContractLog<T> extends ILogEntry {
   event: T
 }
 
-export interface IContractLogEntry extends ILogEntry {
-  event: IDecodedLog | null,
+/**
+ * A decoded contract event log.
+ */
+export interface IContractEventLog extends ILogEntry {
+  /**
+   * Solidity event, ABI decoded. Null if no ABI definition is found.
+   */
+  event?: IDecodedSolidityEvent | null
 }
 
-export interface IContractLogs {
-  entries: IContractLogEntry[],
-  count: number,
-  nextblock: number,
+/**
+ * Query result of a contract's event logs.
+ */
+export interface IContractEventLogs {
+  /**
+   * Event logs, ABI decoded.
+   */
+  entries: IContractEventLog[]
+
+  /**
+   * Number of event logs returned.
+   */
+  count: number
+
+  /**
+   * The block number to start query for new event logs.
+   */
+  nextblock: number
 }
 
 /**
@@ -352,11 +372,13 @@ export class Contract {
   }
 
   /**
-   * Get contract event logs, up to the blockchain tip.
+   * Get contract event logs, up to the latest block. By default, it starts looking
+   * for logs from the beginning of the blockchain.
    * @param req
    */
-  public async logs(req: IRPCWaitForLogsRequest = {}): Promise<IContractLogs> {
+  public async logs(req: IRPCWaitForLogsRequest = {}): Promise<IContractEventLogs> {
     return this.waitLogs({
+      fromBlock: 0,
       toBlock: "latest",
       ...req,
     })
@@ -366,7 +388,7 @@ export class Contract {
    * Get contract event logs. Long-poll wait if no log is found.
    * @param req (optional) IRPCWaitForLogsRequest
    */
-  public async waitLogs(req: IRPCWaitForLogsRequest = {}): Promise<IContractLogs> {
+  public async waitLogs(req: IRPCWaitForLogsRequest = {}): Promise<IContractEventLogs> {
     const filter = req.filter || {}
     if (!filter.addresses) {
       filter.addresses = [this.address]
@@ -391,7 +413,7 @@ export class Contract {
     }
   }
 
-  public onLog(fn: (entry: IContractLogEntry) => void, opts: IRPCWaitForLogsRequest = {}) {
+  public onLog(fn: (entry: IContractEventLog) => void, opts: IRPCWaitForLogsRequest = {}) {
     let nextblock = opts.fromBlock || "latest"
 
     const loop = async () => {

@@ -59,14 +59,14 @@ export function decodeOutputs(method: IABIMethod, outputData: string): any[] {
 /**
  * A decoded Solidity event log
  */
-export interface IDecodedLog {
+export interface IDecodedSolidityEvent {
   /**
-   * The event log's name
+   * The event's name
    */
   type: string
 
   /**
-   * Arguments to event log as key-value map
+   * Event parameters as a key-value map
    */
   [key: string]: any
 }
@@ -78,7 +78,7 @@ export class ContractLogDecoder {
     this._decoder = logDecoder(abi)
   }
 
-  public decode(rawlog: ILogItem): IDecodedLog | null {
+  public decode(rawlog: ILogItem): IDecodedSolidityEvent | null {
     const result = this._decoder([{
       data: ensureHex0x(rawlog.data),
       topics: rawlog.topics.map(ensureHex0x),
@@ -98,7 +98,7 @@ export class ContractLogDecoder {
       throw new Error(`Cannot find ABI for event type: ${type}`)
     }
 
-    const decodedLog: IDecodedLog = {
+    const decodedLog: IDecodedSolidityEvent = {
       type,
     }
 
@@ -111,7 +111,7 @@ export class ContractLogDecoder {
   }
 }
 
-export function decodeLogs(methods: IABIMethod[], logs: ILogItem[]): IDecodedLog[] {
+export function decodeLogs(methods: IABIMethod[], logs: ILogItem[]): IDecodedSolidityEvent[] {
   const decoder = logDecoder(methods)
 
   // Add the 0x prefix to all hex strings, else abi parsing would fail
@@ -136,7 +136,7 @@ export function decodeLogs(methods: IABIMethod[], logs: ILogItem[]): IDecodedLog
       throw new Error(`Cannot find ABI for event type: ${type}`)
     }
 
-    const decodedLog: IDecodedLog = {
+    const decodedLog: IDecodedSolidityEvent = {
       type,
     }
 

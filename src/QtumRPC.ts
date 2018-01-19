@@ -161,6 +161,9 @@ export interface IRPCGetTransactionReceiptRequest {
   txid: string
 }
 
+/**
+ * Transaction receipt returned by qtumd
+ */
 export interface IRPCGetTransactionReceiptBase {
   blockHash: string
   blockNumber: number
@@ -183,7 +186,7 @@ export interface IRPCGetTransactionReceiptResult extends IRPCGetTransactionRecei
 
 export interface ITransactionLog {
   address: string
-  topics: string[],
+  topics: string[]
   data: string
 }
 
@@ -221,9 +224,19 @@ export interface ILogFilter {
   topics?: Array<string | null>,
 }
 
+/**
+ * The raw log data returned by qtumd, not ABI decoded.
+ */
 export interface ILogEntry extends IRPCGetTransactionReceiptBase {
-  topics: string[],
-  data: string,
+  /**
+   * EVM log topics
+   */
+  topics: string[]
+
+  /**
+   * EVM log data, as hexadecimal string
+   */
+  data: string
 }
 
 export interface IRPCWaitForLogsResult {

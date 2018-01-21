@@ -4,7 +4,13 @@ import { QtumRPC } from "../QtumRPC"
 
 export const rpc = new QtumRPC("http://qtum:test@localhost:3889")
 
-export async function assertThrow(fn: () => Promise<any>) {
+export const repo = require("../../solar.development.json")
+
+export async function assertThrow(
+  fn: () => Promise<any>,
+  msg?: string,
+  report?: (err: any) => void,
+) {
   let errorThrown: any = null
 
   try {
@@ -12,9 +18,13 @@ export async function assertThrow(fn: () => Promise<any>) {
   } catch (err) {
     errorThrown = err
   }
-  // await .catch((err) => {
 
-  // })
+  // assert.erro
+  if (errorThrown && report) {
+    report(errorThrown)
+  }
 
-  assert.isNotNull(errorThrown, "error is not thrown")
+  assert(errorThrown != null, msg ? `Expects error to be thrown: ${msg}` : "Expects error to be thrown")
+
+  // assert.isNotNull(errorThrown, )
 }

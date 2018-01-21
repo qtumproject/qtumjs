@@ -24,8 +24,13 @@ function ensureHex0x(hexstr: string): string {
 }
 
 export function encodeInputs(method: IABIMethod, args: any[] = []): string {
+  // massage "address" strings by appending 0x
   args = args.map((arg, i) => {
     const input = method.inputs[i]
+    if (!input) {
+      return arg
+    }
+
     if (input.type === "address") {
       return ensureHex0x(arg)
     }

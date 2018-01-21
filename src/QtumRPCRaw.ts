@@ -76,8 +76,12 @@ export class QtumRPCRaw {
       throw new Error(`unknown method: ${method}`)
     }
 
-    // 500 for other errors
-    if (res.status === 500) {
+    if (res.status !== 200) {
+      if (res.headers["content-type"] !== "application/json") {
+        const body = await res.data
+        throw new Error(`${res.status} ${res.statusText}\n${res.data}`)
+      }
+
       const eresult = await res.data
 
       if (eresult.error) {

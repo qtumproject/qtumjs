@@ -317,6 +317,13 @@ export class Contract {
     })
   }
 
+  /**
+   * Confirms an in-wallet transaction, and return the receipt.
+   *
+   * @param txid transaction id. Must be an in-wallet transaction
+   * @param confirm how many confirmations to ensure
+   * @param onConfirm callback that receives the receipt for each additional confirmation
+   */
   public async confirm(
     txid: string,
     confirm?: number,
@@ -332,6 +339,21 @@ export class Contract {
     }
 
     const receipt = await txrp.confirm(confirm)
+
+    return this._makeSendTxReceipt(receipt)
+  }
+
+  /**
+   * Returns the receipt for a transaction, with decoded event logs.
+   *
+   * @param txid transaction id. Must be an in-wallet transaction
+   * @returns The receipt, or null if transaction is not yet confirmed.
+   */
+  public async receipt(txid: string): Promise<IContractSendReceipt | null> {
+    const receipt = await this.rpc.getTransactionReceipt({ txid })
+    if (!receipt) {
+      return null
+    }
 
     return this._makeSendTxReceipt(receipt)
   }

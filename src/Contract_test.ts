@@ -5,7 +5,13 @@ import { repo, rpc, assertThrow } from "./test"
 import { Contract } from "./Contract"
 
 describe("Contract", () => {
-  const contract = new Contract(rpc, repo.contracts["test/contracts/Methods.sol"])
+  // don't act as sender
+  const {
+    sender: _,
+    ...info,
+  } = repo.contracts["test/contracts/Methods.sol"]
+
+  const contract = new Contract(rpc, info)
 
   describe("#call", async () => {
     it("calls a method and get returned value", async () => {
@@ -42,5 +48,39 @@ describe("Contract", () => {
         await contract.call("setFoo", ["zfoo bar baz"])
       }, "invalid parameter type")
     })
+  })
+
+  describe("#send", async () => {
+    it("can send and confirm tx", async () => {
+      const v = Math.floor(Math.random() * 1000000)
+
+      const tx = await contract.send("setFoo", [v])
+
+      assert.equal(tx.confirmations, 0)
+
+      await rpc.rawCall("generate", [1])
+
+      const receipt = await tx.confirm(1, (r) => {
+        assert.equal(r.confirmations, 1)
+      })
+
+      assert.hasAllKeys(receipt, [
+        "blockHash",
+        "blockNumber",
+        "transactionHash",
+        "transactionIndex",
+        "from",
+        "to",
+        "cumulativeGasUsed",
+        "gasUsed",
+        "contractAddress",
+        "logs",
+        "rawlogs",
+      ])
+
+      const result = await contract.call("getFoo")
+      assert.equal(result.outputs[0].toNumber(), v)
+    })
+
   })
 })

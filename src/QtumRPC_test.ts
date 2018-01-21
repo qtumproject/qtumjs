@@ -35,4 +35,10 @@ describe("QtumRPC", () => {
       return rpc.rawCall("unknown-method")
     })
   })
+
+  it("throws error if calling method using invalid params", async () => {
+    await assertThrow(async () => {
+      return rpc.rawCall("getinfo", [1, 2])
+    })
+  })
 })

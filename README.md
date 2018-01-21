@@ -125,6 +125,12 @@ qcli getbalance
 2000000.00000000
 ```
 
+Deploy test contracts:
+
+```
+sh deploy-test-contracts.sh
+```
+
 Build and run tests:
 
 ```

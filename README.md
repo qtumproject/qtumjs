@@ -96,3 +96,38 @@ main().then((result) => {
   console.log("err", err)
 })
 ```
+
+# Running Tests
+
+```
+docker run -it --rm \
+  --name qtumjs \
+  -v `pwd`:/dapp \
+  -p 3889:3889 \
+  -p 9899:9899 \
+  -p 9888:9888 \
+  hayeah/qtumportal
+```
+
+Enter into container:
+
+```
+docker exec -it qtumjs sh
+```
+
+Generate initial blocks:
+
+```
+qcli generate 600
+
+qcli getbalance
+
+2000000.00000000
+```
+
+Build and run tests:
+
+```
+npm build
+npm run test
+```

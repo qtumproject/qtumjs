@@ -6,16 +6,19 @@ export interface IABIMethod {
   inputs: IABIInput[],
   outputs: IABIOutput[],
   constant: boolean,
+  anonymous: boolean,
 }
 
 export interface IABIInput {
   name: string,
   type: string,
+  indexed: boolean,
 }
 
 export interface IABIOutput {
   name: string,
   type: string,
+  indexed: boolean,
 }
 
 export interface IResult {

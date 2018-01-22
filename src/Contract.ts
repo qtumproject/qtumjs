@@ -25,10 +25,13 @@ import {
   IRPCWaitForLogsRequest,
   ILogEntry,
 } from "./QtumRPC"
+
 import {
   TxReceiptConfirmationHandler,
   TxReceiptPromise,
 } from "./TxReceiptPromise"
+
+import { MethodMap } from "./MethodMap"
 
 export interface IContractSendTx {
   method: string
@@ -200,8 +203,7 @@ export class Contract {
    */
   public address: string
 
-  private callMethodsMap: { [key: string]: IABIMethod } = {}
-  private sendMethodsMap: { [key: string]: IABIMethod } = {}
+  private methodMap: MethodMap
   private _logDecoder: ContractLogDecoder
 
   /**
@@ -213,23 +215,13 @@ export class Contract {
    *      address, owner address, and ABI definition for methods and types.
    */
   constructor(private rpc: QtumRPC, public info: IContractInfo) {
-    for (const methodABI of info.abi) {
-      const name = methodABI.name
-
-      // Allow sendToContract only for non-constant methods
-      if (!methodABI.constant) {
-        this.sendMethodsMap[name] = methodABI
-      }
-
-      this.callMethodsMap[name] = methodABI
-    }
-
+    this.methodMap = new MethodMap(info.abi)
     this.address = info.address
   }
 
   public encodeParams(method: string, args: any[] = []): string {
-    const methodABI = this.callMethodsMap[method]
-    if (methodABI == null) {
+    const methodABI = this.methodMap.findMethod(method, args)
+    if (!methodABI) {
       throw new Error(`Unknown method to call: ${method}`)
     }
 
@@ -248,9 +240,7 @@ export class Contract {
     method: string, args: any[] = [],
     opts: IContractCallRequestOptions = {}):
     Promise<IRPCCallContractResult> {
-    // TODO opts: sender address
 
-    // need to strip the leading "0x"
     const calldata = this.encodeParams(method, args)
 
     // TODO decode?
@@ -280,7 +270,7 @@ export class Contract {
 
     let decodedOutputs = []
     if (output !== "") {
-      const methodABI = this.callMethodsMap[method]
+      const methodABI = this.methodMap.findMethod(method, args)!
       decodedOutputs = decodeOutputs(methodABI, output)
     }
 
@@ -302,9 +292,13 @@ export class Contract {
     opts: IContractSendRequestOptions = {}):
     Promise<IRPCSendToContractResult> {
     // TODO opts: gas limit, gas price, sender address
-    const methodABI = this.sendMethodsMap[method]
+    const methodABI = this.methodMap.findMethod(method, args)
     if (methodABI == null) {
       throw new Error(`Unknown method to send: ${method}`)
+    }
+
+    if (methodABI.constant) {
+      throw new Error(`cannot send to a constant method: ${method}`)
     }
 
     const calldata = encodeInputs(methodABI, args)
@@ -360,13 +354,16 @@ export class Contract {
 
   public async send(
     method: string,
-    args: any[],
+    args: any[] = [],
     opts: IContractSendRequestOptions = {},
   ): Promise<IContractSendResult> {
-    const methodABI = this.sendMethodsMap[method]
-
+    const methodABI = this.methodMap.findMethod(method, args)
     if (methodABI == null) {
       throw new Error(`Unknown method to send: ${method}`)
+    }
+
+    if (methodABI.constant) {
+      throw new Error(`cannot send to a constant method: ${method}`)
     }
 
     const calldata = encodeInputs(methodABI, args)

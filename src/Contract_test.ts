@@ -48,6 +48,34 @@ describe("Contract", () => {
         await contract.call("setFoo", ["zfoo bar baz"])
       }, "invalid parameter type")
     })
+
+    describe("method overloading", () => {
+      const overload = new Contract(rpc, repo.contracts["test/contracts/MethodOverloading.sol"])
+
+      it("calls a method and get returned value", async () => {
+        let result
+        result = await overload.call("foo")
+        assert.equal(result.outputs[0], "foo()")
+
+        result = await overload.call("foo()")
+        assert.equal(result.outputs[0], "foo()")
+
+        result = await overload.call("foo(uint256)", [1])
+        assert.equal(result.outputs[0], "foo(uint256)")
+        result = await overload.call("foo(string)", ["a"])
+        assert.equal(result.outputs[0], "foo(string)")
+
+        result = await overload.call("foo(uint256,uint256)", [1, 2])
+        assert.equal(result.outputs[0], "foo(uint256,uint256)")
+        result = await overload.call("foo(int256,int256)", [1, 2])
+        assert.equal(result.outputs[0], "foo(int256,int256)")
+
+        result = await overload.call("foo", [1, 2, 3])
+        assert.equal(result.outputs[0], "foo(int256,int256,int256)")
+        result = await overload.call("foo(int256,int256,int256)", [1, 2, 3])
+        assert.equal(result.outputs[0], "foo(int256,int256,int256)")
+      })
+    })
   })
 
   describe("#send", async () => {
@@ -82,5 +110,10 @@ describe("Contract", () => {
       assert.equal(result.outputs[0].toNumber(), v)
     })
 
+    it("throws error if method exists but is constant", async () => {
+      await assertThrow(async () => {
+        await contract.send("getFoo")
+      }, "method is contant")
+    })
   })
 })

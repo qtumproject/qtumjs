@@ -106,7 +106,15 @@ export interface IDeployedContractInfo extends IContractInfo {
  * The result of calling a contract method, with decoded outputs.
  */
 export interface IContractCallResult extends IRPCCallContractResult {
+  /**
+   * ABI-decoded outputs
+   */
   outputs: any[]
+
+  /**
+   * ABI-decoded logs
+   */
+  logs: Array<IDecodedSolidityEvent | null>
 }
 
 /**
@@ -274,8 +282,14 @@ export class Contract {
       decodedOutputs = decodeOutputs(methodABI, output)
     }
 
+
+    const decodedLogs = r.transactionReceipt.log.map((rawLog) => {
+      return this.logDecoder.decode(rawLog)
+    })
+
     return Object.assign(r, {
       outputs: decodedOutputs,
+      logs: decodedLogs,
     })
   }
 

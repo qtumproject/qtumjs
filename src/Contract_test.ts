@@ -116,4 +116,18 @@ describe("Contract", () => {
       }, "method is contant")
     })
   })
+
+  describe("event logs", () => {
+    const logs = new Contract(rpc, repo.contracts["test/contracts/Logs.sol"])
+
+    it("decodes logs for call", async () => {
+      const result = await logs.call("emitFooEvent", ["abc"])
+      assert.deepEqual(result.logs, [
+        {
+          type: "FooEvent",
+          a: "abc",
+        },
+      ])
+    })
+  })
 })

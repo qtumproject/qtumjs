@@ -33,8 +33,6 @@ export class MethodMap {
     for (const key of keyCollisions) {
       delete this.methods[key]
     }
-
-    console.log(this.methods)
   }
 
   /**

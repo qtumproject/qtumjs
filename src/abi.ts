@@ -97,22 +97,10 @@ export class ContractLogDecoder {
 
     const type = log._eventName
 
-    const logABI = this.abi.find((method) => method.name === type)
+    log.type = log._eventName
+    delete log._eventName
 
-    if (!logABI) {
-      throw new Error(`Cannot find ABI for event type: ${type}`)
-    }
-
-    const decodedLog: IDecodedSolidityEvent = {
-      type,
-    }
-
-    // logABI.inputs.forEach(())
-    for (const input of logABI.inputs) {
-      decodedLog[input.name] = log[input.name] as any
-    }
-
-    return decodedLog
+    return log as any
   }
 }
 

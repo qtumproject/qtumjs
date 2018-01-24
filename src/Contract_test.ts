@@ -20,6 +20,7 @@ describe("Contract", () => {
         "address",
         "executionResult",
         "transactionReceipt",
+        "logs",
         "outputs",
       ])
 

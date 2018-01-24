@@ -289,7 +289,6 @@ export class Contract {
       decodedOutputs = decodeOutputs(methodABI, output)
     }
 
-
     const decodedLogs = r.transactionReceipt.log.map((rawLog) => {
       return this.logDecoder.decode(rawLog)
     })

@@ -19,7 +19,9 @@ describe("MethodMap", () => {
       type: "function",
       payable: false,
       inputs: [],
-      outputs: [],
+      outputs: [
+        { name: "", type: "string", indexed: false },
+      ],
       constant: false,
       anonymous: false,
     })
@@ -34,7 +36,9 @@ describe("MethodMap", () => {
       type: "function",
       payable: false,
       inputs: [],
-      outputs: [],
+      outputs: [
+        { name: "", type: "string", indexed: false },
+      ],
       constant: false,
       anonymous: false,
     })
@@ -48,7 +52,9 @@ describe("MethodMap", () => {
       type: "function",
       payable: false,
       inputs: [{ name: "_a", type: "string", indexed: false }],
-      outputs: [],
+      outputs: [
+        { name: "", type: "string", indexed: false },
+      ],
       constant: false,
       anonymous: false,
     })
@@ -60,7 +66,9 @@ describe("MethodMap", () => {
       type: "function",
       payable: false,
       inputs: [{ name: "_a", type: "uint256", indexed: false }],
-      outputs: [],
+      outputs: [
+        { name: "", type: "string", indexed: false },
+      ],
       constant: false,
       anonymous: false,
     })
@@ -85,7 +93,9 @@ describe("MethodMap", () => {
         [{ name: "_a", type: "int256", indexed: false },
         { name: "_b", type: "int256", indexed: false },
         { name: "_c", type: "int256", indexed: false }],
-      outputs: [],
+      outputs: [
+        { name: "", type: "string", indexed: false },
+      ],
       constant: false,
       anonymous: false,
     })

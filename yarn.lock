@@ -726,9 +726,9 @@ esutils@^2.0.2:
   version "2.0.2"
   resolved "https://registry.yarnpkg.com/esutils/-/esutils-2.0.2.tgz#0abf4f1caa5bcb1f7a9d8acc6dea4faaa04bac9b"
 
-ethjs-abi@^0.2.1:
+ethjs-abi@hayeah/ethjs-abi:
   version "0.2.1"
-  resolved "https://registry.yarnpkg.com/ethjs-abi/-/ethjs-abi-0.2.1.tgz#e0a7a93a7e81163a94477bad56ede524ab6de533"
+  resolved "https://codeload.github.com/hayeah/ethjs-abi/tar.gz/ed1f5d8fd1f2c31bf32687ddf8f64a50cb953ea3"
   dependencies:
     bn.js "4.11.6"
     js-sha3 "0.5.5"

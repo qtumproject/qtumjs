@@ -24,6 +24,6 @@ describe("ContractsRepo", () => {
 
     assert.isNotNull(fooEvent)
     assert.deepEqual(fooEvent[0], "Foo!")
-
+    assert.deepEqual(fooEvent, { data: "Foo!", type: "LogOfDependantContractChildEvent" })
   })
 })

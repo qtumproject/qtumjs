@@ -4,9 +4,9 @@ pragma solidity ^0.4.18;
 // https://github.com/qtumproject/qtumjs/issues/4
 
 contract LogOfDependantContractChild {
-  event FooEvent(string data);
+  event LogOfDependantContractChildEvent(string data);
 
   function emitFoo() public {
-    FooEvent("Foo!");
+    LogOfDependantContractChildEvent("Foo!");
   }
 }

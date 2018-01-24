@@ -95,11 +95,6 @@ export class ContractLogDecoder {
 
     const log = result[0]
 
-    const type = log._eventName
-
-    log.type = log._eventName
-    delete log._eventName
-
     return log as any
   }
 }

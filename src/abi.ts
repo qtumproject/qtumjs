@@ -61,7 +61,6 @@ export class ContractLogDecoder {
   }
 
   public decode(rawlog: ILogItem): IDecodedSolidityEvent | null {
-    console.log("rawlog", rawlog)
     const result = this._decoder([rawlog])
 
     if (result.length === 0) {

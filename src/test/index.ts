@@ -2,7 +2,9 @@ import { assert } from "chai"
 
 import { QtumRPC } from "../QtumRPC"
 
-export const rpc = new QtumRPC("http://qtum:test@localhost:3889")
+export const rpcURL = "http://qtum:test@localhost:3889"
+
+export const rpc = new QtumRPC(rpcURL)
 
 export const repo = require("../../solar.development.json")
 

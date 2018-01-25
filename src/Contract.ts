@@ -6,7 +6,6 @@ const {
 } = require("ethjs-abi") as IETHABI
 
 import {
-  decodeLogs,
   decodeOutputs,
   encodeInputs,
   ContractLogDecoder,
@@ -258,7 +257,6 @@ export class Contract {
 
     const calldata = this.encodeParams(method, args)
 
-    // TODO decode?
     return this.rpc.callContract({
       address: this.address,
       datahex: calldata,
@@ -272,8 +270,6 @@ export class Contract {
     args: any[] = [],
     opts: IContractCallRequestOptions = {}):
     Promise<IContractCallResult> {
-    // TODO support the named return values mechanism for decodeParams
-
     const r = await this.rawCall(method, args, opts)
 
     const exception = r.executionResult.excepted
@@ -503,7 +499,7 @@ export class Contract {
     // https://stackoverflow.com/a/34710102
     // ...receiptNoLog will be a copy of receipt, without the `log` property
     const { log: rawlogs, ...receiptNoLog } = receipt
-    const logs = decodeLogs(this.info.abi, rawlogs)
+    const logs = rawlogs.map((rawLog) => this.logDecoder.decode(rawLog)!)
 
     return {
       ...receiptNoLog,

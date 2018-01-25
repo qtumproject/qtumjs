@@ -46,4 +46,6 @@ export interface IETHABI {
   decodeLogItem(eventObject: IABIMethod, log: ILogItem, useNumberedParams?: boolean): IResult
 
   logDecoder(abi: IABIMethod[], useNumberedParams?: boolean): LogDecoder
+
+  configure(opts: any): any
 }

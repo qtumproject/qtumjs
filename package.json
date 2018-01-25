@@ -22,7 +22,7 @@
   "dependencies": {
     "axios": "^0.17.1",
     "btoa": "^1.1.2",
-    "ethjs-abi": "hayeah/ethjs-abi",
+    "qtumjs-ethjs-abi": "^1.0.0",
     "eventemitter3": "^2.0.3",
     "url-parse": "^1.1.9"
   },

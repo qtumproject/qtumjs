@@ -316,6 +316,13 @@ buffer@^4.3.0:
     ieee754 "^1.1.4"
     isarray "^1.0.0"
 
+buffer@^5.0.8:
+  version "5.0.8"
+  resolved "https://registry.yarnpkg.com/buffer/-/buffer-5.0.8.tgz#84daa52e7cf2fa8ce4195bc5cf0f7809e0930b24"
+  dependencies:
+    base64-js "^1.0.2"
+    ieee754 "^1.1.4"
+
 builtin-modules@^1.0.0:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/builtin-modules/-/builtin-modules-1.1.1.tgz#270f076c5a72c02f5b65a47df94c5fe3a278892f"
@@ -725,14 +732,6 @@ estraverse@^4.1.0, estraverse@^4.1.1:
 esutils@^2.0.2:
   version "2.0.2"
   resolved "https://registry.yarnpkg.com/esutils/-/esutils-2.0.2.tgz#0abf4f1caa5bcb1f7a9d8acc6dea4faaa04bac9b"
-
-ethjs-abi@hayeah/ethjs-abi:
-  version "0.2.1"
-  resolved "https://codeload.github.com/hayeah/ethjs-abi/tar.gz/ed1f5d8fd1f2c31bf32687ddf8f64a50cb953ea3"
-  dependencies:
-    bn.js "4.11.6"
-    js-sha3 "0.5.5"
-    number-to-bn "1.7.0"
 
 event-emitter@~0.3.5:
   version "0.3.5"
@@ -1659,6 +1658,15 @@ punycode@^1.2.4, punycode@^1.4.1:
 qs@~6.4.0:
   version "6.4.0"
   resolved "https://registry.yarnpkg.com/qs/-/qs-6.4.0.tgz#13e26d28ad6b0ffaa91312cd3bf708ed351e7233"
+
+qtumjs-ethjs-abi@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/qtumjs-ethjs-abi/-/qtumjs-ethjs-abi-1.0.0.tgz#852d143700764f7d5074e2a8887f6b17246d0cf4"
+  dependencies:
+    bn.js "4.11.6"
+    buffer "^5.0.8"
+    js-sha3 "0.5.5"
+    number-to-bn "1.7.0"
 
 querystring-es3@^0.2.0:
   version "0.2.1"

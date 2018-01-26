@@ -3,8 +3,10 @@ import { IContractsRepoData, ContractsRepo } from "./ContractsRepo"
 import { Contract } from "./Contract"
 
 /**
- * Qtum is a factory for Contract. It is instantiated with all the ABI information,
- * as well as addresses of deployed contract.
+ * The `Qtum` class is an instance of the `qtumjs` API.
+ *
+ * @param providerURL URL of the qtumd RPC service.
+ * @param repoData Information about Solidity contracts.
  */
 export class Qtum extends QtumRPC {
   private repo: ContractsRepo
@@ -21,7 +23,10 @@ export class Qtum extends QtumRPC {
   }
 
   /**
-   * Getting a deployed instance of Contract by name
+   * A factory method to instantiate a `Contract` instance using the ABI
+   * definitions and address found in `repoData`. The Contract instance is
+   * configured with an event log decoder that can decode all known event types
+   * found in `repoData`.
    *
    * @param name The name of a deployed contract
    */

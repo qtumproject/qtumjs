@@ -1,7 +1,7 @@
 import { IContractInfo, Contract } from "./Contract"
 import { IABIMethod } from "./ethjs-abi"
 import { QtumRPC } from "./QtumRPC"
-import { ContractLogDecoder } from "./abi";
+import { ContractLogDecoder } from "./abi"
 
 export interface IABIDefs {
   [key: string]: {
@@ -9,18 +9,27 @@ export interface IABIDefs {
   }
 }
 
+/**
+ * Information about contracts
+ */
 export interface IContractsRepoData {
-  // deployed contracts
+  /**
+   * Information about deployed contracts
+   */
   contracts: {
     [key: string]: IContractInfo,
   },
 
+  /**
+   * Information about deployed libraries
+   */
   libraries: {
-    [key: string]: {
-      abi: IABIMethod[],
-    },
+    [key: string]: IContractInfo,
   }
 
+  /**
+   * Information of contracts referenced by deployed contract/libraries, but not deployed
+   */
   related: {
     [key: string]: {
       abi: IABIMethod[],

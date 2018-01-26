@@ -35,6 +35,8 @@ async function transfer(fromAddr, toAddr, amount) {
 }
 ```
 
+The [full source code](https://github.com/qtumproject/qtumbook-mytoken-qtumjs-cli).
+
 > This example uses async/await (supported natively by Node 8+).
 
 # Running Tests

@@ -1,7 +1,7 @@
 import "mocha"
 import { assert } from "chai"
 
-import { repo, rpc, assertThrow } from "./test"
+import { repoData, rpc, assertThrow } from "./test"
 import { Contract } from "./Contract"
 
 describe("Contract", () => {
@@ -9,7 +9,7 @@ describe("Contract", () => {
   const {
     sender: _,
     ...info,
-  } = repo.contracts["test/contracts/Methods.sol"]
+  } = repoData.contracts["test/contracts/Methods.sol"]
 
   const contract = new Contract(rpc, info)
 
@@ -51,7 +51,7 @@ describe("Contract", () => {
     })
 
     describe("method overloading", () => {
-      const overload = new Contract(rpc, repo.contracts["test/contracts/MethodOverloading.sol"])
+      const overload = new Contract(rpc, repoData.contracts["test/contracts/MethodOverloading.sol"])
 
       it("calls a method and get returned value", async () => {
         let result
@@ -119,7 +119,7 @@ describe("Contract", () => {
   })
 
   describe("event logs", () => {
-    const logs = new Contract(rpc, repo.contracts["test/contracts/Logs.sol"])
+    const logs = new Contract(rpc, repoData.contracts["test/contracts/Logs.sol"])
 
     it("decodes logs for call", async () => {
       const result = await logs.call("emitFooEvent", ["abc"])

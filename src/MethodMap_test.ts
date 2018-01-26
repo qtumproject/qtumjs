@@ -1,13 +1,13 @@
 import "mocha"
 import { assert } from "chai"
 
-import { repo, rpc, assertThrow } from "./test"
+import { repoData, rpc, assertThrow } from "./test"
 import { Contract } from "./Contract"
 import { MethodMap } from "./MethodMap"
 
 describe("MethodMap", () => {
   // don't act as sender
-  const methods = repo.contracts["test/contracts/MethodOverloading.sol"].abi
+  const methods = repoData.contracts["test/contracts/MethodOverloading.sol"].abi
 
   const map = new MethodMap(methods)
 

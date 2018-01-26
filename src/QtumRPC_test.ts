@@ -41,4 +41,6 @@ describe("QtumRPC", () => {
       return rpc.rawCall("getinfo", [1, 2])
     })
   })
+
+
 })

@@ -6,7 +6,7 @@ export const rpcURL = "http://qtum:test@localhost:3889"
 
 export const rpc = new QtumRPC(rpcURL)
 
-export const repo = require("../../solar.development.json")
+export const repoData = require("../../solar.development.json")
 
 export async function assertThrow(
   fn: () => Promise<any>,

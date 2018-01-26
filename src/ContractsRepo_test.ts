@@ -1,7 +1,7 @@
 import "mocha"
 import { assert } from "chai"
 
-import { repo as repoData, rpc, assertThrow } from "./test"
+import { repoData as repoData, rpc, assertThrow } from "./test"
 import { ContractsRepo } from "./ContractsRepo"
 
 describe("ContractsRepo", () => {

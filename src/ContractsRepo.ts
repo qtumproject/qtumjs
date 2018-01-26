@@ -9,7 +9,7 @@ export interface IABIDefs {
   }
 }
 
-export interface IContractsRepo {
+export interface IContractsRepoData {
   // deployed contracts
   contracts: {
     [key: string]: IContractInfo,
@@ -37,13 +37,13 @@ export class ContractsRepo {
    */
   public logDecoder: ContractLogDecoder
 
-  constructor(private qtum: QtumRPC, private repo: IContractsRepo) {
+  constructor(private qtum: QtumRPC, private repoData: IContractsRepoData) {
     const eventABIs = this.allEventABIs()
     this.logDecoder = new ContractLogDecoder(eventABIs)
   }
 
   public contract(name: string): Contract {
-    const info = this.repo.contracts[name]
+    const info = this.repoData.contracts[name]
     if (!info) {
       throw new Error(`cannot find contract: ${name}`)
     }
@@ -62,11 +62,19 @@ export class ContractsRepo {
       contracts,
       libraries,
       related,
-    } = this.repo
+    } = this.repoData
 
-    mergeDefs(contracts)
-    mergeDefs(libraries)
-    mergeDefs(related)
+    if (contracts) {
+      mergeDefs(contracts)
+    }
+
+    if (libraries) {
+      mergeDefs(libraries)
+    }
+
+    if (related) {
+      mergeDefs(related)
+    }
 
     return allEventABIs
 
@@ -83,5 +91,4 @@ export class ContractsRepo {
       }
     }
   }
-
 }

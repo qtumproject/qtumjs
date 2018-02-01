@@ -58,7 +58,7 @@ export class ContractsRepo {
     }
 
     // Instantiate the contract with a log decoder that can handle all known events
-    return new Contract(this.qtum, info, this.logDecoder)
+    return new Contract(this.qtum, info, { logDecoder: this.logDecoder })
   }
 
   /**

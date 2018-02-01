@@ -152,7 +152,8 @@ export interface IContractCallRequestOptions {
 }
 
 /**
- * The transaction receipt for a `send` to a contract method, with the event logs decoded.
+ * The transaction receipt for a `send` to a contract method, with the event
+ * logs decoded.
  */
 export interface IContractSendReceipt extends IRPCGetTransactionReceiptBase {
   /**
@@ -207,6 +208,12 @@ export interface IContractInitOptions {
    * pass in a logDecoder that knows about all the event definitions.
    */
   logDecoder?: ContractLogDecoder
+
+  /**
+   * If a contract's use case requires numbers more than 53 bits, use bn.js to
+   * represent numbers instead of native JavaScript numbers. (default = false)
+   */
+  useBigNumber?: boolean
 }
 
 /**
@@ -221,6 +228,7 @@ export class Contract {
 
   private methodMap: MethodMap
   private _logDecoder: ContractLogDecoder
+  private _useBigNumber: boolean
 
   /**
    * Create a Contract
@@ -238,6 +246,8 @@ export class Contract {
     if (opts.logDecoder) {
       this._logDecoder = opts.logDecoder
     }
+
+    this._useBigNumber = this._useBigNumber || false
   }
 
   public encodeParams(method: string, args: any[] = []): string {
@@ -250,9 +260,9 @@ export class Contract {
   }
 
   /**
-   * Call a contract method using ABI encoding, and return the RPC result as is. This
-   * does not create a transaction. It is useful for gas estimation or getting results from
-   * read-only methods.
+   * Call a contract method using ABI encoding, and return the RPC result as is.
+   * This does not create a transaction. It is useful for gas estimation or
+   * getting results from read-only methods.
    *
    * @param method name of contract method to call
    * @param args arguments
@@ -272,6 +282,15 @@ export class Contract {
     })
   }
 
+  /**
+   * Executes contract method on your own local qtumd node as a "simulation"
+   * using `callcontract`. It is free, and does not actually modify the
+   * blockchain.
+   *
+   * @param method Name of the contract method
+   * @param args Arguments for calling the method
+   * @param opts call options
+   */
   public async call(
     method: string,
     args: any[] = [],
@@ -303,8 +322,111 @@ export class Contract {
   }
 
   /**
-   * Create a transaction that calls a method using ABI encoding, and return the RPC result as is.
-   * A transaction will require network consensus to confirm, and costs you gas.
+   * Call a method, and return only the first return value of the method. This
+   * is a convenient syntatic sugar to get the return value when there is only
+   * one.
+   *
+   * @param method Name of the contract method
+   * @param args Arguments for calling the method
+   * @param opts call options
+   */
+  public async return(
+    method: string,
+    args: any[] = [],
+    opts: IContractCallRequestOptions = {},
+  ): Promise<any> {
+    const result = await this.call(method, args, opts)
+    const val = result.outputs[0]
+
+    // Convert big number to JavaScript number
+    // FIXME: It'd be better to support this consistently at the ABI decoding level.
+    if (!this._useBigNumber && typeof val.toNumber === "function") {
+      return val.toNumber()
+    }
+
+    return val
+  }
+
+  /**
+   * Call a method, and return the first return value as Date. It is assumed
+   * that the returned value is unix second.
+   *
+   * @param method
+   * @param args
+   * @param opts
+   */
+  public async returnDate(
+    method: string,
+    args: any[] = [],
+    opts: IContractCallRequestOptions = {},
+  ): Promise<Date> {
+    const result = await this.return(method, args, opts)
+    if (typeof result !== "number") {
+      throw Error("Cannot convert return value to Date. Expect return value to be a number.")
+    }
+
+    return new Date(result * 1000)
+  }
+
+  /**
+   * Call a method, and return the first return value (a uint). Convert the value to
+   * the desired currency unit.
+   *
+   * @param targetBase The currency unit to convert to. If a number, it is
+   * treated as the power of 10. -8 is satoshi. 0 is the canonical unit.
+   * @param method
+   * @param args
+   * @param opts
+   */
+  public async returnCurrency(
+    targetBase: number | string,
+    method: string,
+    args: any[] = [],
+    opts: IContractCallRequestOptions = {},
+  ): Promise<number> {
+    const value = await this.return(method, args, opts)
+
+    if (typeof value !== "number") {
+      throw Error("Cannot convert return value to currency unit. Expect return value to be a number.")
+    }
+
+    let base: number = 0
+
+    if (typeof targetBase === "number") {
+      base = targetBase
+    } else {
+      switch (targetBase) {
+        case "qtum":
+        case "btc":
+          base = 0
+          break
+        case "sat":
+        case "satoshi":
+          base = -8
+        default:
+          throw Error(`Unknown base currency unit: ${targetBase}`)
+      }
+    }
+
+    const satoshi = 1e-8
+
+    return value / satoshi * (10 ** base)
+  }
+
+  public async returnAs<T>(
+    converter: (val: any) => T | Promise<T>,
+    method: string,
+    args: any[] = [],
+    opts: IContractCallRequestOptions = {},
+  ): Promise<T> {
+    const value = await this.return(method, args, opts)
+    return await converter(value)
+  }
+
+  /**
+   * Create a transaction that calls a method using ABI encoding, and return the
+   * RPC result as is. A transaction will require network consensus to confirm,
+   * and costs you gas.
    *
    * @param method name of contract method to call
    * @param args arguments

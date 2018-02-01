@@ -45,7 +45,7 @@ The [full source code](https://github.com/qtumproject/qtumbook-mytoken-qtumjs-cl
 docker run -it --rm \
   --name qtumjs \
   -v `pwd`:/dapp \
-  -p 3889:3889 \
+  -p 5889:3889 \
   -p 9899:9899 \
   -p 9888:9888 \
   hayeah/qtumportal

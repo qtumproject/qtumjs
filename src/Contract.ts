@@ -410,7 +410,7 @@ export class Contract {
 
     const satoshi = 1e-8
 
-    return value / satoshi * (10 ** base)
+    return value * satoshi / (10 ** base)
   }
 
   public async returnAs<T>(

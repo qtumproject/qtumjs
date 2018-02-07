@@ -409,4 +409,12 @@ export class QtumRPC extends QtumRPCRaw {
     this._hasTxWaitSupport = helpmsg.split("\n")[0].indexOf("waitconf") !== -1
     return this._hasTxWaitSupport
   }
+
+  public async fromHexAddress(hexAddress: string): Promise<string> {
+    return this.rawCall("fromhexaddress", [hexAddress])
+  }
+
+  public async getHexAddress(address: string): Promise<string> {
+    return this.rawCall("gethexaddress", [address])
+  }
 }

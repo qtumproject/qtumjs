@@ -74,6 +74,6 @@ sh deploy-test-contracts.sh
 Build and run tests:
 
 ```
-npm build
+npm run build
 npm run test
 ```

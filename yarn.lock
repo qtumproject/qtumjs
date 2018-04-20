@@ -1659,9 +1659,9 @@ qs@~6.4.0:
   version "6.4.0"
   resolved "https://registry.yarnpkg.com/qs/-/qs-6.4.0.tgz#13e26d28ad6b0ffaa91312cd3bf708ed351e7233"
 
-qtumjs-ethjs-abi@^1.0.2:
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/qtumjs-ethjs-abi/-/qtumjs-ethjs-abi-1.0.2.tgz#f68b7ae8e20a407f8441fc0c9958402cf505094b"
+qtumjs-ethjs-abi@^1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/qtumjs-ethjs-abi/-/qtumjs-ethjs-abi-1.0.3.tgz#d2aecd89abfa4e118de48af9a741855cd89947dd"
   dependencies:
     bn.js "4.11.6"
     buffer "^5.0.8"

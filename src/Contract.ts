@@ -336,15 +336,23 @@ export class Contract {
     opts: IContractCallRequestOptions = {},
   ): Promise<any> {
     const result = await this.call(method, args, opts)
+    return result.outputs[0]
+  }
+
+  public async returnNumber(
+    method: string,
+    args: any[] = [],
+    opts: IContractCallRequestOptions = {},
+  ): Promise<number> {
+    const result = await this.call(method, args, opts)
     const val = result.outputs[0]
 
     // Convert big number to JavaScript number
-    // FIXME: It'd be better to support this consistently at the ABI decoding level.
-    if (!this._useBigNumber && typeof val.toNumber === "function") {
-      return val.toNumber()
+    if (typeof val.toNumber !== "function") {
+      throw new Error("Cannot convert result to a number")
     }
 
-    return val
+    return val.toNumber()
   }
 
   /**

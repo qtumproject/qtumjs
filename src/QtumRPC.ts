@@ -276,6 +276,11 @@ export interface IRPCSearchLogsRequest {
   minconf?: number
 }
 
+export interface IRPCGenerateRequest {
+  nBlocks: number
+  maxtries?: number
+}
+
 export type IRPCSearchLogsResult = IRPCGetTransactionReceiptResult[]
 
 export interface IPromiseCancel<T> extends Promise<T> {
@@ -284,6 +289,18 @@ export interface IPromiseCancel<T> extends Promise<T> {
 
 export class QtumRPC extends QtumRPCRaw {
   private _hasTxWaitSupport: boolean | undefined
+
+  public generate(req: IRPCGenerateRequest): Promise<string[]> {
+    const args = [
+      req.nBlocks
+    ]
+
+    if (req.maxtries) {
+      args.push(req.maxtries);
+    }
+
+    return this.rawCall("generate", args);
+  }
 
   public getInfo(): Promise<IGetInfoResult> {
     return this.rawCall("getinfo")

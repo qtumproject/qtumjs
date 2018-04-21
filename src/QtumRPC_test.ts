@@ -42,6 +42,20 @@ describe("QtumRPC", () => {
     })
   })
 
+  it("can generate a block", async () => {
+    const blockhashes = await rpc.generate({
+      nBlocks: 1
+    })
+    assert.strictEqual(blockhashes.length, 1)
+  })
+
+  it("can generate multiple blocks", async () => {
+    const blockhashes = await rpc.generate({
+      nBlocks: 5
+    })
+    assert.strictEqual(blockhashes.length, 5)
+  })
+
   it("can convert a hex address to a p2pkh address", async () => {
     const p2pkhAddress = await rpc.fromHexAddress("b22cbfd8dffcd4e0120279c2cc41315fac2335e2")
     assert.strictEqual(p2pkhAddress, "qZoV3RKeHaxKM5RnuZdA5bwoYTCH73QLrE")

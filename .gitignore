@@ -6,3 +6,4 @@ node_modules/
 .qtum
 .cache
 solar.development.json
+package-lock.json

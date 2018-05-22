@@ -243,11 +243,9 @@ export class Contract {
     this.methodMap = new MethodMap(info.abi)
     this.address = info.address
 
-    if (opts.logDecoder) {
-      this._logDecoder = opts.logDecoder
-    }
+    this._logDecoder = opts.logDecoder || new ContractLogDecoder(this.info.abi)
 
-    this._useBigNumber = this._useBigNumber || false
+    this._useBigNumber = false
   }
 
   public encodeParams(method: string, args: any[] = []): string {
@@ -624,11 +622,6 @@ export class Contract {
   }
 
   private get logDecoder(): ContractLogDecoder {
-    if (this._logDecoder) {
-      return this._logDecoder
-    }
-
-    this._logDecoder = new ContractLogDecoder(this.info.abi)
     return this._logDecoder
   }
 

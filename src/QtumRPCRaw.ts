@@ -26,6 +26,8 @@ export class QtumRPCRaw {
   private _api: AxiosInstance
 
   constructor(private _baseURL: string) {
+    this.idNonce = 0
+
     const url = new URL(_baseURL)
 
     const config: AxiosRequestConfig = {

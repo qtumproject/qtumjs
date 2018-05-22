@@ -3,7 +3,7 @@ import { EventEmitter } from "eventemitter3"
 
 const {
   logDecoder,
-} = require("ethjs-abi") as IETHABI
+} = require("qtumjs-ethjs-abi") as IETHABI
 
 import {
   decodeOutputs,

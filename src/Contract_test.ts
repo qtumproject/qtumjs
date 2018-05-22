@@ -79,6 +79,26 @@ describe("Contract", () => {
     })
   })
 
+  describe("ABI encoding", async () => {
+
+
+    it("can encode address[]", async () => {
+      const logs = new Contract(rpc, repoData.contracts["test/contracts/ArrayArguments.sol"])
+
+      const calldata = logs.encodeParams("takeArray", [[
+        "aa00000000000000000000000000000000000011",
+        "bb00000000000000000000000000000000000022",
+      ]])
+
+      assert.equal(
+        calldata,
+        // tslint:disable-next-line:max-line-length
+        `ee3b88ea00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000aa00000000000000000000000000000000000011000000000000000000000000bb00000000000000000000000000000000000022`,
+      )
+
+    })
+  })
+
   describe("#send", async () => {
     it("can send and confirm tx", async () => {
       const v = Math.floor(Math.random() * 1000000)

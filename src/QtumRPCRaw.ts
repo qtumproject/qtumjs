@@ -1,4 +1,6 @@
 import axios, { AxiosInstance, AxiosPromise, AxiosRequestConfig, CancelToken, CancelTokenSource } from "axios"
+import { IProvider } from "./Provider"
+
 const URL = require("url-parse")
 
 import { sleep } from "./sleep"
@@ -21,7 +23,7 @@ export interface IRPCCallOption {
   cancelToken?: CancelToken,
 }
 
-export class QtumRPCRaw {
+export class QtumRPCRaw implements IProvider<any> {
   private idNonce: number
   private _api: AxiosInstance
 

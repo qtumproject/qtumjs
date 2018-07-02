@@ -8,7 +8,7 @@ describe("Contract", () => {
   // don't act as sender
   const {
     sender: _,
-    ...info,
+    ...info
   } = repoData.contracts["test/contracts/Methods.sol"]
 
   const contract = new Contract(rpc, info)

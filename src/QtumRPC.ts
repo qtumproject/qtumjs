@@ -286,22 +286,14 @@ export interface IPromiseCancel<T> extends Promise<T> {
 export class QtumRPC {
   private _hasTxWaitSupport: boolean | undefined
 
-  constructor(private provider: IProvider<any>) {
-  }
-
-  public async rawCall(
-    method: string,
-    params: any[] = [],
-    opts: IRPCCallOption = {},
-  ): Promise<any> {
-    return this.provider.rawCall(method, params, opts);
+  constructor(public provider: IProvider<any>) {
   }
 
   public getInfo(): Promise<IGetInfoResult> {
-    return this.rawCall("getinfo");
+    return this.provider.rawCall("getinfo")
   }
 
-  public sendToContract(req: IRPCSendToContractRequest): Promise<IRPCSendToContractResult> {
+  public sendToContract(req: IRPCSendToContractRequest): Promise<any> {
     const vals = {
       ...sendToContractRequestDefaults,
       ...req,
@@ -319,7 +311,7 @@ export class QtumRPC {
       args.push(vals.senderAddress)
     }
 
-    return this.rawCall("sendtocontract", args)
+    return this.provider.rawCall("sendtocontract", args)
   }
 
   public callContract(req: IRPCCallContractRequest): Promise<IRPCCallContractResult> {
@@ -332,7 +324,7 @@ export class QtumRPC {
       args.push(req.senderAddress)
     }
 
-    return this.rawCall("callcontract", args)
+    return this.provider.rawCall("callcontract", args)
   }
 
   public getTransaction(req: IRPCGetTransactionRequest): Promise<IRPCGetTransactionResult> {
@@ -350,7 +342,7 @@ export class QtumRPC {
       args.push(req.waitconf)
     }
 
-    return this.rawCall("gettransaction", args)
+    return this.provider.rawCall("gettransaction", args)
   }
 
   public async getTransactionReceipt(req: IRPCGetTransactionRequest): Promise<IRPCGetTransactionReceiptResult | null> {
@@ -358,7 +350,7 @@ export class QtumRPC {
     // When transaction is mined, the API returns [receipt]
     //
     // We'll do the unwrapping here.
-    const result: IRPCGetTransactionReceiptResult[] = await this.rawCall("gettransactionreceipt", [req.txid])
+    const result: IRPCGetTransactionReceiptResult[] = await this.provider.rawCall("gettransactionreceipt", [req.txid])
 
     if (result.length === 0) {
       return null
@@ -380,7 +372,7 @@ export class QtumRPC {
 
     const cancelTokenSource = this.provider.cancelTokenSource()
 
-    const p = this.rawCall("waitforlogs", args, { cancelToken: cancelTokenSource.token })
+    const p = this.provider.rawCall("waitforlogs", args, { cancelToken: cancelTokenSource.token })
 
     return Object.assign(p, {
       cancel: cancelTokenSource.cancel.bind(cancelTokenSource),
@@ -409,7 +401,7 @@ export class QtumRPC {
       req.minconf,
     ]
 
-    return this.rawCall("searchlogs", args)
+    return this.provider.rawCall("searchlogs", args)
   }
 
   public async checkTransactionWaitSupport(): Promise<boolean> {
@@ -417,16 +409,16 @@ export class QtumRPC {
       return this._hasTxWaitSupport
     }
 
-    const helpmsg: string = await this.rawCall("help", ["gettransaction"])
+    const helpmsg: string = await this.provider.rawCall("help", ["gettransaction"])
     this._hasTxWaitSupport = helpmsg.split("\n")[0].indexOf("waitconf") !== -1
     return this._hasTxWaitSupport
   }
 
   public async fromHexAddress(hexAddress: string): Promise<string> {
-    return this.rawCall("fromhexaddress", [hexAddress])
+    return this.provider.rawCall("fromhexaddress", [hexAddress])
   }
 
   public async getHexAddress(address: string): Promise<string> {
-    return this.rawCall("gethexaddress", [address])
+    return this.provider.rawCall("gethexaddress", [address])
   }
 }

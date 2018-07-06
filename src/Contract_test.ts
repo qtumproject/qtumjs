@@ -120,6 +120,7 @@ describe("Contract", () => {
         "transactionIndex",
         "from",
         "to",
+        "excepted",
         "cumulativeGasUsed",
         "gasUsed",
         "contractAddress",

@@ -10,6 +10,9 @@
             true,
             "never"
         ],
+        "trailing-comma": [
+            true
+        ],
         "object-literal-sort-keys": false,
         "variable-name": [
             true,

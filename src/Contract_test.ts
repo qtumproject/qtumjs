@@ -8,7 +8,7 @@ describe("Contract", () => {
   // don't act as sender
   const {
     sender: _,
-    ...info,
+    ...info
   } = repoData.contracts["test/contracts/Methods.sol"]
 
   const contract = new Contract(rpc, info)
@@ -80,8 +80,6 @@ describe("Contract", () => {
   })
 
   describe("ABI encoding", async () => {
-
-
     it("can encode address[]", async () => {
       const logs = new Contract(rpc, repoData.contracts["test/contracts/ArrayArguments.sol"])
 

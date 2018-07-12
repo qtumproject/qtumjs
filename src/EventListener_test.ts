@@ -3,6 +3,7 @@ import { assert } from "chai"
 
 import { repoData as repoData, rpc, generateBlock, assertThrow } from "./test"
 import { ContractsRepo } from "./ContractsRepo"
+import { IContractInfo } from "./Contract"
 
 describe("EventListener", () => {
   // don't act as sender
@@ -28,6 +29,39 @@ describe("EventListener", () => {
     assert.deepEqual(fooEvent.event, { data: "Foo!", type: "LogOfDependantContractChildEvent" })
   })
 
-  // TODO ignore unknown event
+  it("should leave unrecognized events unparsed", async () => {
+    const logContractInfo: IContractInfo = repoData.contracts["test/contracts/Logs.sol"]
+
+    logContractInfo.abi = logContractInfo.abi.filter((def) => !Object.is(def.name, "BazEvent"))
+
+    const repoData2 = {
+      contracts: { Logs: logContractInfo },
+      libraries: {},
+      related: {},
+    }
+
+    const repo2 = new ContractsRepo(rpc, repoData2)
+
+    const logContract = repo2.contract("Logs")
+
+    const listener = repo2.eventListener()
+
+    const logPromise = listener.waitLogs({ minconf: 0 })
+    const tx = logContract.send("emitMultipleEvents", ["test!"])
+    generateBlock()
+
+    const logs = await logPromise
+    // find unrecognized BazEvent, whose topic is BazEvent
+    const bazEvent = logs.entries.find((entry) =>
+      Object.is(entry.topics[0], "ebe3309556157bcfc1c4e8912c38f6994609d30dc7f5fa520622bf176b9bcec3")
+    )!
+
+    assert.equal(logs.count, 3)
+    assert.isNotNull(bazEvent)
+    assert.isNull(bazEvent.event)
+
+    // console.log("logs", JSON.stringify(logs, null, 2))
+  })
+
   // TODO can listen for specific topic
 })

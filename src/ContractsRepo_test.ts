@@ -3,6 +3,7 @@ import { assert } from "chai"
 
 import { repoData as repoData, rpc, assertThrow } from "./test"
 import { ContractsRepo } from "./ContractsRepo"
+import { IContractInfo } from "./Contract";
 
 describe("ContractsRepo", () => {
   // don't act as sender

@@ -23,7 +23,7 @@ export interface IRPCCallOption {
   cancelToken?: CancelToken,
 }
 
-export class QtumRPCRaw implements IProvider<any> {
+export class QtumRPCRaw implements IProvider {
   private idNonce: number
   private _api: AxiosInstance
 

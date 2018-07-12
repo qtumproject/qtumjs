@@ -286,7 +286,7 @@ export interface IPromiseCancel<T> extends Promise<T> {
 export class QtumRPC {
   private _hasTxWaitSupport: boolean | undefined
 
-  constructor(public provider: IProvider<any>) {
+  constructor(public provider: IProvider) {
   }
 
   public getInfo(): Promise<IGetInfoResult> {

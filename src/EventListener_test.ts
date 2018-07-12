@@ -79,5 +79,46 @@ describe("EventListener", () => {
       generateBlock()
     })
   })
+
+  describe("#onLog", () => {
+    const contract = repo.contract("test/contracts/Logs.sol")
+    const listener = repo.eventListener()
+
+    it("can receive a log using callback", (done) => {
+      contract.send("emitFooEvent", ["test!"])
+
+      const cancelOnLog = listener.onLog((entry) => {
+        const fooEvent = entry.event!
+        assert.deepEqual(fooEvent, { a: "test!", type: "FooEvent" })
+
+        // clean up test by unsubscribing from events
+        cancelOnLog()
+        done()
+      }, { minconf: 0 })
+
+      generateBlock()
+    })
+  })
+
+  describe("#emitter", () => {
+    const contract = repo.contract("test/contracts/Logs.sol")
+    const listener = repo.eventListener()
+
+    it("can receive logs using event emitter", (done) => {
+      contract.send("emitFooEvent", ["test!"])
+
+      const emitter = listener.emitter({ minconf: 0 })
+      emitter.on("FooEvent", (entry) => {
+        const fooEvent = entry.event!
+        assert.deepEqual(fooEvent, { a: "test!", type: "FooEvent" })
+
+        // clean up test by unsubscribing from events
+        emitter.cancel()
+        done()
+      })
+
+      generateBlock()
+    })
+  })
   // TODO can listen for specific topic
 })

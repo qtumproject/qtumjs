@@ -6,6 +6,10 @@ import { IContractEventLogs, IContractEventLog } from "./Contract"
 
 export type ICancelFunction = () => void
 
+export interface ICancellableEventEmitter extends EventEmitter {
+  cancel: ICancelFunction
+}
+
 export class EventListener {
   // TODO filter out unparseable logs
 
@@ -13,7 +17,9 @@ export class EventListener {
   }
 
   /**
-   * Get contract event logs. Long-poll wait if no log is found.
+   * Get contract event logs. Long-poll wait if no log is found. Returns a cancel
+   * function that stops the events subscription.
+   *
    * @param req (optional) IRPCWaitForLogsRequest
    */
   public waitLogs(req: IRPCWaitForLogsRequest = {}): IPromiseCancel<IContractEventLogs> {
@@ -87,15 +93,17 @@ export class EventListener {
   /**
    * Subscribe to contract's events, use EventsEmitter interface.
    */
-  public emitter(opts: IRPCWaitForLogsRequest = {}): EventEmitter {
+  public emitter(opts: IRPCWaitForLogsRequest = {}): ICancellableEventEmitter {
     const emitter = new EventEmitter()
 
-    this.onLog((entry) => {
+    const cancel = this.onLog((entry) => {
       const key = (entry.event && entry.event.type) || "?"
       emitter.emit(key, entry)
     }, opts)
 
-    return emitter
+    return Object.assign(emitter, {
+      cancel,
+    })
   }
 
 }

@@ -13,7 +13,6 @@ describe("EventListener", () => {
     const listener = repo.eventListener()
 
     const contract = repo.contract("test/contracts/LogOfDependantContract.sol")
-
     const logPromise = listener.waitLogs({ minconf: 0 })
 
     const tx = await contract.send("emitLog")
@@ -63,5 +62,22 @@ describe("EventListener", () => {
     // console.log("logs", JSON.stringify(logs, null, 2))
   })
 
+  describe("#onLog", () => {
+    const contract = repo.contract("test/contracts/Logs.sol")
+    const listener = repo.eventListener()
+
+    it("can receive a log using callback", (done) => {
+      contract.send("emitFooEvent", ["test!"])
+
+      const cancelOnLog = listener.onLog((entry) => {
+        const fooEvent = entry.event!
+        assert.deepEqual(fooEvent, { a: "test!", type: "FooEvent" })
+        cancelOnLog()
+        done()
+      }, { minconf: 0 })
+
+      generateBlock()
+    })
+  })
   // TODO can listen for specific topic
 })

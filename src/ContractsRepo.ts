@@ -2,6 +2,7 @@ import { IContractInfo, Contract } from "./Contract"
 import { IABIMethod } from "./ethjs-abi"
 import { QtumRPC } from "./QtumRPC"
 import { ContractLogDecoder } from "./abi"
+import { EventListener } from "./EventListener"
 
 export interface IABIDefs {
   [key: string]: {
@@ -46,7 +47,7 @@ export class ContractsRepo {
    */
   public logDecoder: ContractLogDecoder
 
-  constructor(private qtum: QtumRPC, private repoData: IContractsRepoData) {
+  constructor(private rpc: QtumRPC, private repoData: IContractsRepoData) {
     const eventABIs = this.allEventABIs()
     this.logDecoder = new ContractLogDecoder(eventABIs)
   }
@@ -58,7 +59,11 @@ export class ContractsRepo {
     }
 
     // Instantiate the contract with a log decoder that can handle all known events
-    return new Contract(this.qtum, info, { logDecoder: this.logDecoder })
+    return new Contract(this.rpc, info, { logDecoder: this.logDecoder })
+  }
+
+  public eventListener(): EventListener {
+    return new EventListener(this.rpc, this.logDecoder)
   }
 
   /**

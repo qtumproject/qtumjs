@@ -8,6 +8,10 @@ export const rpc = new QtumRPC(rpcURL)
 
 export const repoData = require("../../solar.development.json")
 
+export async function generateBlock(n = 1) {
+  return rpc.rawCall("generate", [n])
+}
+
 export async function assertThrow(
   fn: () => Promise<any>,
   msg?: string,

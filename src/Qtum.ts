@@ -15,7 +15,7 @@ export class Qtum {
   private rawRpc: QtumRPC
 
   constructor(providerURL: string, repoData?: IContractsRepoData) {
-    const provider: IProvider<any> = new QtumRPCRaw(providerURL)
+    const provider: IProvider = new QtumRPCRaw(providerURL)
 
     this.rawRpc = new QtumRPC(provider)
     this.repo = new ContractsRepo(this.rawRpc, {

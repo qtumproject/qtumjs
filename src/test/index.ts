@@ -6,6 +6,9 @@ export const rpcURL = "http://qtum:test@localhost:5889"
 
 export const rpc = new QtumRPC(rpcURL)
 
+export const ethRpcURL = `http://localhost:8545`
+export const ethRpc = new QtumRPC(ethRpcURL)
+
 export const repoData = require("../../solar.development.json")
 
 export async function generateBlock(n = 1) {

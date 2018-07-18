@@ -27,17 +27,17 @@ export interface IRPCSendToContractRequest {
   /**
    * (required) The contract address that will receive the funds and data.
    */
-  address: string
+  to: string
 
   /**
    * (required) data to send
    */
-  datahex: string
+  data: string
 
   /**
    * The amount in QTUM to send. eg 0.1, default: 0
    */
-  amount?: number | string
+  value?: number | string
 
   /**
    * gasLimit, default: 200000, max: 40000000
@@ -52,12 +52,14 @@ export interface IRPCSendToContractRequest {
   /**
    * The quantum address that will be used as sender.
    */
-  senderAddress?: string
+  from?: string
 
   /**
    * Whether to broadcast the transaction or not (default: true)
    */
   // broadcast?: boolean
+
+  nonce?: number
 }
 
 export interface IRPCSendToContractResult {
@@ -68,28 +70,33 @@ export interface IRPCSendToContractResult {
   /**
    * QTUM address of the sender.
    */
-  sender: string,
+  sender?: string,
   /**
    * ripemd-160 hash of the sender.
    */
-  hash160: string,
+  hash160?: string,
 }
 
 export interface IRPCCallContractRequest {
   /**
    * (required) The account address
    */
-  address: string
+  to: string
 
   /**
    * (required) The data hex string
    */
-  datahex: string
+  data: string
 
   /**
    * The sender address hex string
    */
-  senderAddress?: string
+  from?: string
+
+  gasLimit?: number
+  gasPrice?: number | string
+  value?: number | string
+  blockNumber?: number | string
 }
 
 export interface IExecutionResult {
@@ -154,6 +161,23 @@ export interface IRPCGetTransactionResult {
   hex: string,
 }
 
+/**
+ * Basic information about a ethereum transaction submitted to the network.
+ */
+export interface IRPCGetTransactionResultEth {
+  hash: string
+  nonce: string
+  from: string
+  to: string
+  value: string
+  gas: string
+  gasPrice: string
+  input: string
+  blockHash?: string
+  blockNumber?: string
+  transactionIndex?: string
+}
+
 export interface IRPCGetTransactionReceiptRequest {
   /**
    * The transaction id
@@ -177,11 +201,18 @@ export interface IRPCGetTransactionReceiptBase {
   cumulativeGasUsed: number
   gasUsed: number
 
-  contractAddress: string
+  contractAddress?: string
+  status?: TRANSITION_STATUS
+}
+
+export enum TRANSITION_STATUS {
+  FAILED,
+  SUCCESS,
 }
 
 export interface IRPCGetTransactionReceiptResult extends IRPCGetTransactionReceiptBase {
-  log: ITransactionLog[]
+  log?: ITransactionLog[]
+  logs?: ITransactionLog[]
 }
 
 export interface ITransactionLog {
@@ -191,7 +222,7 @@ export interface ITransactionLog {
 }
 
 const sendToContractRequestDefaults = {
-  amount: 0,
+  value: 0,
   gasLimit: 200000,
   // FIXME: Does not support string gasPrice although the doc says it does.
   gasPrice: 0.0000004,
@@ -284,46 +315,72 @@ export interface IPromiseCancel<T> extends Promise<T> {
 
 export class QtumRPC extends QtumRPCRaw {
   private _hasTxWaitSupport: boolean | undefined
+  private _isEthereumNetwork: boolean | undefined
+
+  public constructor(_baseURL: string) {
+    super(_baseURL)
+
+    this.isEthereumNetwork()
+  }
 
   public getInfo(): Promise<IGetInfoResult> {
     return this.rawCall("getinfo")
   }
 
-  public sendToContract(req: IRPCSendToContractRequest): Promise<IRPCSendToContractResult> {
+  public async sendToContract(req: IRPCSendToContractRequest): Promise<IRPCSendToContractResult> {
+    const isEthereumNetwork = await this.isEthereumNetwork()
+
+    if (isEthereumNetwork) {
+      return this.ethSendTransaction(req)
+    }
+
     const vals = {
       ...sendToContractRequestDefaults,
       ...req,
     }
 
     const args = [
-      vals.address,
-      vals.datahex,
-      vals.amount,
+      vals.to,
+      vals.data,
+      vals.value,
       vals.gasLimit,
       vals.gasPrice,
     ]
 
-    if (vals.senderAddress) {
-      args.push(vals.senderAddress)
+    if (vals.from) {
+      args.push(vals.from)
     }
 
     return this.rawCall("sendtocontract", args)
   }
 
-  public callContract(req: IRPCCallContractRequest): Promise<IRPCCallContractResult> {
+  public async callContract(req: IRPCCallContractRequest): Promise<IRPCCallContractResult | string> {
+    const isEthereumNetwork = await this.isEthereumNetwork()
+
+    if (isEthereumNetwork) {
+      return this.ethCall(req)
+    }
+
     const args = [
-      req.address,
-      req.datahex,
+      req.to,
+      req.data,
     ]
 
-    if (req.senderAddress) {
-      args.push(req.senderAddress)
+    if (req.from) {
+      args.push(req.from)
     }
 
     return this.rawCall("callcontract", args)
   }
 
-  public getTransaction(req: IRPCGetTransactionRequest): Promise<IRPCGetTransactionResult> {
+  public async getTransaction(req: IRPCGetTransactionRequest):
+    Promise<IRPCGetTransactionResult | IRPCGetTransactionResultEth> {
+    const isEthereumNetwork = await this.isEthereumNetwork()
+
+    if (isEthereumNetwork) {
+      return this.ethGetTransaction(req)
+    }
+
     const args: any[] = [
       req.txid,
     ]
@@ -342,6 +399,11 @@ export class QtumRPC extends QtumRPCRaw {
   }
 
   public async getTransactionReceipt(req: IRPCGetTransactionRequest): Promise<IRPCGetTransactionReceiptResult | null> {
+    const isEthereumNetwork = await this.isEthereumNetwork()
+
+    if (isEthereumNetwork) {
+      return this.ethGetTransactionReceipt(req)
+    }
     // The raw RPC API returns [] if tx id doesn't exist or not mined yet
     // When transaction is mined, the API returns [receipt]
     //
@@ -405,6 +467,12 @@ export class QtumRPC extends QtumRPCRaw {
       return this._hasTxWaitSupport
     }
 
+    const isEthereumNetwork = await this.isEthereumNetwork()
+    if (isEthereumNetwork) {
+      this._hasTxWaitSupport = false
+      return false
+    }
+
     const helpmsg: string = await this.rawCall("help", ["gettransaction"])
     this._hasTxWaitSupport = helpmsg.split("\n")[0].indexOf("waitconf") !== -1
     return this._hasTxWaitSupport
@@ -416,5 +484,111 @@ export class QtumRPC extends QtumRPCRaw {
 
   public async getHexAddress(address: string): Promise<string> {
     return this.rawCall("gethexaddress", [address])
+  }
+
+  public async isEthereumNetwork(): Promise<boolean> {
+    if (this._isEthereumNetwork !== undefined) {
+      return this._isEthereumNetwork
+    }
+
+    try {
+      await this.getInfo()
+      this._isEthereumNetwork = false
+      return false
+    } catch (err) {
+      if (err.message && /not allowed method|not supported/.test(err.message as string)) {
+        this._isEthereumNetwork = true
+        return true
+      }
+
+      throw err
+    }
+  }
+
+  public async getGasPrice(): Promise<string> {
+    return this.rawCall("eth_gasPrice")
+  }
+
+  public async getBlockNumber(): Promise<number> {
+    const blockNumber = await this.rawCall("eth_blockNumber")
+    return Number(blockNumber)
+  }
+
+  private async ethSendTransaction(req: IRPCSendToContractRequest): Promise<IRPCSendToContractResult> {
+    if (req.from == null) {
+      throw new Error("Parameter missing: `from`(transaction sender)")
+    }
+
+    const {
+      gasLimit,
+      gasPrice: configGasPrice,
+      ...ethArgs
+    } = req
+
+    let gasPrice = configGasPrice
+    if (!gasPrice) {
+      gasPrice = await this.getGasPrice()
+    }
+
+    const args = [{
+      ...ethArgs,
+      gas: gasLimit || sendToContractRequestDefaults.gasLimit,
+      gasPrice,
+    }]
+
+    const txid = await this.rawCall("eth_sendTransaction", args)
+    return {
+      txid
+    }
+  }
+
+  private async ethCall(req: IRPCCallContractRequest): Promise<string> {
+    if (req.from == null) {
+      throw new Error("Parameter missing: `from`(transaction sender)")
+    }
+
+    const {
+      gasLimit,
+      gasPrice: configGasPrice,
+      blockNumber,
+      ...ethArgs
+    } = req
+
+    let gasPrice = configGasPrice
+    if (!gasPrice) {
+      gasPrice = Number(await this.getGasPrice())
+    }
+
+    const args: any[] = [
+      {
+        ...ethArgs,
+        gas: gasLimit || sendToContractRequestDefaults.gasLimit,
+        gasPrice,
+      }
+    ]
+
+    if (blockNumber != null) {
+      args.push(blockNumber)
+    }
+
+    return this.rawCall("eth_call", args)
+  }
+
+  private async ethGetTransaction(req: IRPCGetTransactionRequest): Promise<IRPCGetTransactionResultEth> {
+    const args = [
+      req.txid,
+    ]
+
+    return this.rawCall("eth_getTransactionByHash", args)
+  }
+
+  private async ethGetTransactionReceipt(req: IRPCGetTransactionRequest):
+    Promise<IRPCGetTransactionReceiptResult | null> {
+    const receipt = await this.rawCall("eth_getTransactionReceipt", [req.txid])
+    if (receipt == null) {
+      return null
+    }
+
+    return receipt
   }
 }

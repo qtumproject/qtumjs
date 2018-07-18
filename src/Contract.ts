@@ -23,11 +23,13 @@ import {
   QtumRPC,
   IRPCWaitForLogsRequest,
   ILogEntry,
+  IRPCGetTransactionResultEth,
 } from "./QtumRPC"
 
 import {
   TxReceiptConfirmationHandler,
   TxReceiptPromise,
+  TxReceiptConfirmationHandlerEth,
 } from "./TxReceiptPromise"
 
 import { MethodMap } from "./MethodMap"
@@ -46,16 +48,40 @@ export type IContractSendConfirmationHandler = (
 ) => any
 
 /**
+ * The callback function invoked for each additional confirmation
+ */
+export type IContractSendConfirmationHandlerEth = (
+  tx: IRPCGetTransactionResultEth,
+  receipt: IContractSendReceipt,
+) => any
+
+/**
  * @param n Number of confirmations to wait for
  * @param handler The callback function invoked for each additional confirmation
  */
-export type IContractSendConfirmFunction = (n?: number, handler?: IContractSendConfirmationHandler) =>
+export type IContractSendConfirmFunction = (
+  n?: number, handler?: IContractSendConfirmationHandler | IContractSendConfirmationHandlerEth) =>
   Promise<IContractSendReceipt>
 
 /**
  * Result of contract send.
  */
 export interface IContractSendResult extends IRPCGetTransactionResult {
+  /**
+   * Name of contract method invoked.
+   */
+  method: string
+
+  /**
+   * Wait for transaction confirmations.
+   */
+  confirm: IContractSendConfirmFunction,
+}
+
+/**
+ * Result of contract send.
+ */
+export interface IContractSendResultEth extends IRPCGetTransactionResultEth {
   /**
    * Name of contract method invoked.
    */
@@ -104,7 +130,7 @@ export interface IDeployedContractInfo extends IContractInfo {
 /**
  * The result of calling a contract method, with decoded outputs.
  */
-export interface IContractCallResult extends IRPCCallContractResult {
+export interface IContractCallResult {
   /**
    * ABI-decoded outputs
    */
@@ -114,6 +140,8 @@ export interface IContractCallResult extends IRPCCallContractResult {
    * ABI-decoded logs
    */
   logs: Array<IDecodedSolidityEvent | null>
+
+  rawResult: IRPCCallContractResult | string
 }
 
 /**
@@ -123,7 +151,7 @@ export interface IContractSendRequestOptions {
   /**
    * The amount in QTUM to send. eg 0.1, default: 0
    */
-  amount?: number | string
+  value?: number | string
 
   /**
    * gasLimit, default: 200000, max: 40000000
@@ -138,7 +166,7 @@ export interface IContractSendRequestOptions {
   /**
    * The quantum address that will be used as sender.
    */
-  senderAddress?: string
+  from?: string
 }
 
 /**
@@ -148,7 +176,7 @@ export interface IContractCallRequestOptions {
   /**
    * The quantum address that will be used as sender.
    */
-  senderAddress?: string
+  from?: string
 }
 
 /**
@@ -268,14 +296,14 @@ export class Contract {
   public async rawCall(
     method: string, args: any[] = [],
     opts: IContractCallRequestOptions = {}):
-    Promise<IRPCCallContractResult> {
+    Promise<IRPCCallContractResult | string> {
 
     const calldata = this.encodeParams(method, args)
 
     return this.rpc.callContract({
-      address: this.address,
-      datahex: calldata,
-      senderAddress: opts.senderAddress || this.info.sender,
+      to: this.address,
+      data: calldata,
+      from: opts.from || this.info.sender,
       ...opts,
     })
   }
@@ -292,16 +320,24 @@ export class Contract {
   public async call(
     method: string,
     args: any[] = [],
-    opts: IContractCallRequestOptions = {}):
-    Promise<IContractCallResult> {
-    const r = await this.rawCall(method, args, opts)
+    opts: IContractCallRequestOptions = {}
+  ): Promise<IContractCallResult> {
+    const callResult = await this.rawCall(method, args, opts)
 
-    const exception = r.executionResult.excepted
-    if (exception !== "None") {
-      throw new Error(`Call exception: ${exception}`)
+    let output = callResult as string
+    const decodedLogs: Array<IDecodedSolidityEvent | null> = []
+    if (typeof callResult !== "string") {
+      const exception = callResult.executionResult.excepted
+      if (exception !== "None") {
+        throw new Error(`Call exception: ${exception}`)
+      }
+
+      output = callResult.executionResult.output
+
+      callResult.transactionReceipt.log.forEach((rawLog) => {
+        decodedLogs.push(this._logDecoder.decode(rawLog))
+      })
     }
-
-    const output = r.executionResult.output
 
     let decodedOutputs = []
     if (output !== "") {
@@ -309,14 +345,11 @@ export class Contract {
       decodedOutputs = decodeOutputs(methodABI, output)
     }
 
-    const decodedLogs = r.transactionReceipt.log.map((rawLog) => {
-      return this.logDecoder.decode(rawLog)
-    })
-
-    return Object.assign(r, {
+    return {
+      rawResult: callResult,
       outputs: decodedOutputs,
       logs: decodedLogs,
-    })
+    }
   }
 
   /**
@@ -455,9 +488,9 @@ export class Contract {
     const calldata = encodeInputs(methodABI, args)
 
     return this.rpc.sendToContract({
-      address: this.address,
-      datahex: calldata,
-      senderAddress: opts.senderAddress || this.info.sender,
+      from: opts.from || this.info.sender,
+      to: this.address,
+      data: calldata,
       ...opts,
     })
   }
@@ -472,14 +505,17 @@ export class Contract {
   public async confirm(
     txid: string,
     confirm?: number,
-    onConfirm?: IContractSendConfirmationHandler,
+    onConfirm?: IContractSendConfirmationHandler | IContractSendConfirmationHandlerEth,
   ): Promise<IContractSendReceipt> {
     const txrp = new TxReceiptPromise(this.rpc, txid)
 
     if (onConfirm) {
-      txrp.onConfirm((tx2, receipt2) => {
-        const sendTxReceipt = this._makeSendTxReceipt(receipt2)
-        onConfirm(tx2, sendTxReceipt)
+      txrp.onConfirm((
+        tx2: any,
+        receipt2: IRPCGetTransactionReceiptResult
+      ) => {
+        const sendTxReceipt = this._makeSendTxReceipt(receipt2);
+        (onConfirm as IContractSendConfirmationHandler)(tx2, sendTxReceipt)
       })
     }
 
@@ -507,7 +543,7 @@ export class Contract {
     method: string,
     args: any[] = [],
     opts: IContractSendRequestOptions = {},
-  ): Promise<IContractSendResult> {
+  ): Promise<IContractSendResult | IContractSendResultEth> {
     const methodABI = this.methodMap.findMethod(method, args)
     if (methodABI == null) {
       throw new Error(`Unknown method to send: ${method}`)
@@ -520,9 +556,9 @@ export class Contract {
     const calldata = encodeInputs(methodABI, args)
 
     const sent = await this.rpc.sendToContract({
-      datahex: calldata,
-      address: this.address,
-      senderAddress: opts.senderAddress || this.info.sender,
+      data: calldata,
+      to: this.address,
+      from: opts.from || this.info.sender,
       ...opts,
     })
 
@@ -530,12 +566,12 @@ export class Contract {
 
     const txinfo = await this.rpc.getTransaction({ txid })
 
+    const confirm: IContractSendConfirmFunction = (n, handler) => this.confirm(txid, n, handler)
+
     const sendTx = {
       ...txinfo,
       method,
-      confirm: (n?: number, handler?: IContractSendConfirmationHandler) => {
-        return this.confirm(txid, n, handler)
-      },
+      confirm,
     }
 
     return sendTx
@@ -628,13 +664,13 @@ export class Contract {
   private _makeSendTxReceipt(receipt: IRPCGetTransactionReceiptResult): IContractSendReceipt {
     // https://stackoverflow.com/a/34710102
     // ...receiptNoLog will be a copy of receipt, without the `log` property
-    const { log: rawlogs, ...receiptNoLog } = receipt
-    const logs = rawlogs.map((rawLog) => this.logDecoder.decode(rawLog)!)
+    const { log: rawLog, logs: rawLogs, ...receiptNoLog } = receipt
+    const logs = ((rawLog || rawLogs) as ITransactionLog[]).map((log) => this.logDecoder.decode(log)!)
 
     return {
       ...receiptNoLog,
       logs,
-      rawlogs,
+      rawlogs: rawLog || rawLogs!,
     }
   }
 }

@@ -5,6 +5,8 @@ import {
   IRPCGetTransactionRequest,
   IRPCGetTransactionResult,
   QtumRPC,
+  IRPCGetTransactionResultEth,
+  TRANSITION_STATUS,
 } from "./QtumRPC"
 import { sleep } from "./sleep"
 
@@ -13,7 +15,14 @@ export type TxReceiptConfirmationHandler = (
   receipt: IRPCGetTransactionReceiptResult,
 ) => any
 
+export type TxReceiptConfirmationHandlerEth = (
+  tx: IRPCGetTransactionResultEth,
+  receipt: IRPCGetTransactionReceiptResult,
+) => any
+
 const EVENT_CONFIRM = "confirm"
+
+const HALF_ESTIMATED_AVERAGE_BLOCK_TIME = 7500
 
 // tslint:disable-next-line:no-empty-interface
 export interface ITxReceiptConfirmOptions {
@@ -54,6 +63,10 @@ export class TxReceiptPromise {
 
       const tx = await this._rpc.getTransaction(req)
 
+      if (isEthereumTransaction(tx)) {
+        return this.confirmEth(tx, confirm, opts)
+      }
+
       if (tx.confirmations > 0) {
         const receipt = await this._rpc.getTransactionReceipt({ txid: tx.txid })
 
@@ -76,6 +89,7 @@ export class TxReceiptPromise {
 
         if (tx.confirmations >= minconf) {
           // reached number of required confirmations. done
+          this._emitter.removeAllListeners(EVENT_CONFIRM)
           return receipt2
         }
       }
@@ -91,11 +105,58 @@ export class TxReceiptPromise {
     }
   }
 
-  public onConfirm(fn: TxReceiptConfirmationHandler) {
+  public onConfirm(fn: TxReceiptConfirmationHandler | TxReceiptConfirmationHandlerEth) {
     this._emitter.on(EVENT_CONFIRM, fn)
   }
 
-  public offConfirm(fn: TxReceiptConfirmationHandler) {
+  public offConfirm(fn: TxReceiptConfirmationHandler | TxReceiptConfirmationHandlerEth) {
     this._emitter.off(EVENT_CONFIRM, fn)
   }
+
+  private async confirmEth(
+    tx: IRPCGetTransactionResultEth,
+    requiredConfirmation: number = 6,
+    opts: ITxReceiptConfirmOptions = {},
+  ): Promise<IRPCGetTransactionReceiptResult> {
+    const { txid } = this
+
+    while (true) {
+      const receipt = await this._rpc.getTransactionReceipt({ txid })
+      const currentBlockNumber = await this._rpc.getBlockNumber()
+
+      // not yet confirmed or is pending
+      if (receipt == null) {
+        await sleep(HALF_ESTIMATED_AVERAGE_BLOCK_TIME)
+        continue
+      }
+
+      const hasTransactionError =
+        (receipt.status != null &&
+          Number(receipt.status) === TRANSITION_STATUS.FAILED)
+      if (hasTransactionError) {
+        throw new Error("Transaction process error")
+      }
+
+      const receiptBlockNumber = receipt.blockNumber
+
+      const confirmationCounter = currentBlockNumber - receiptBlockNumber
+      if (confirmationCounter < requiredConfirmation) {
+        // wait for more confirmations
+        this._emitter.emit(EVENT_CONFIRM, tx, receipt)
+
+        await sleep(HALF_ESTIMATED_AVERAGE_BLOCK_TIME)
+        continue
+      }
+
+      // enough confirmation, success
+      this._emitter.removeAllListeners(EVENT_CONFIRM)
+      return receipt
+    }
+  }
+}
+
+export function isEthereumTransaction(
+  transaction: IRPCGetTransactionResult | IRPCGetTransactionResultEth
+): transaction is IRPCGetTransactionResultEth {
+  return (transaction as IRPCGetTransactionResult).amount == null
 }

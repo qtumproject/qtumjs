@@ -78,7 +78,12 @@ export class QtumRPCRaw {
       throw new Error(`unknown method: ${method}`)
     }
 
-    if (res.status !== 200) {
+    // trying to call a qtum method on a ethereum network
+    if (res.status === 405) {
+      throw new Error(`not allowed method: ${method}`)
+    }
+
+    if (res.status !== 200 || res.data.error != null) {
       if (res.headers["content-type"] !== "application/json") {
         const body = await res.data
         throw new Error(`${res.status} ${res.statusText}\n${res.data}`)

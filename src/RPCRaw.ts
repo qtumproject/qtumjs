@@ -1,7 +1,11 @@
-import axios, { AxiosInstance, AxiosPromise, AxiosRequestConfig, CancelToken, CancelTokenSource } from "axios"
+import axios, {
+  AxiosInstance,
+  AxiosPromise,
+  AxiosRequestConfig,
+  CancelToken,
+  CancelTokenSource
+} from "axios"
 const URL = require("url-parse")
-
-import { sleep } from "./sleep"
 
 export interface IJSONRPCRequest {
   id: any
@@ -18,28 +22,28 @@ export interface IAuthorization {
 }
 
 export interface IRPCCallOption {
-  cancelToken?: CancelToken,
+  cancelToken?: CancelToken
 }
 
-export class QtumRPCRaw {
+export class RPCRaw {
   private idNonce: number
   private _api: AxiosInstance
 
-  constructor(private _baseURL: string) {
+  constructor(baseURL: string) {
     this.idNonce = 0
 
-    const url = new URL(_baseURL)
+    const url = new URL(baseURL)
 
     const config: AxiosRequestConfig = {
       baseURL: url.origin,
       // don't throw on non-200 response
-      validateStatus: () => true,
+      validateStatus: () => true
     }
 
     if (url.username !== "" && url.password !== "") {
       config.auth = {
         username: url.username,
-        password: url.password,
+        password: url.password
       }
     }
 
@@ -53,19 +57,19 @@ export class QtumRPCRaw {
   public async rawCall(
     method: string,
     params: any[] = [],
-    opts: IRPCCallOption = {},
+    opts: IRPCCallOption = {}
   ): Promise<any> {
     const rpcCall: IJSONRPCRequest = {
       method,
       params,
-      id: this.idNonce++,
+      id: this.idNonce++
     }
 
-    let res = await this.makeRPCCall(rpcCall)
+    let res = await this.makeRPCCall(rpcCall, opts)
 
     if (res.status === 402) {
       const auth: IAuthorization = res.data
-      res = await this.authCall(auth.id, rpcCall)
+      res = await this.authCall(auth.id, rpcCall, opts)
     }
 
     if (res.status === 401) {
@@ -85,17 +89,13 @@ export class QtumRPCRaw {
 
     if (res.status !== 200 || res.data.error != null) {
       if (res.headers["content-type"] !== "application/json") {
-        const body = await res.data
         throw new Error(`${res.status} ${res.statusText}\n${res.data}`)
       }
 
-      const eresult = await res.data
+      const eresult = res.data
 
       if (eresult.error) {
-        const {
-          code,
-          message,
-        } = eresult.error
+        const { code, message } = eresult.error
         throw new Error(`[${code}] ${message}`)
       } else {
         throw new Error(String(eresult))
@@ -106,11 +106,18 @@ export class QtumRPCRaw {
     return result
   }
 
-  private makeRPCCall(rpcCall: IJSONRPCRequest): AxiosPromise<any> {
-    return this._api.post("/", rpcCall)
+  private makeRPCCall(
+    rpcCall: IJSONRPCRequest,
+    opts: IRPCCallOption = {}
+  ): AxiosPromise<any> {
+    return this._api.post("/", rpcCall, opts)
   }
 
-  private async authCall(authID: string, rpcCall: IJSONRPCRequest): Promise<any> {
+  private async authCall(
+    authID: string,
+    rpcCall: IJSONRPCRequest,
+    opts: IRPCCallOption = {}
+  ): Promise<any> {
     // long-poll an authorization until its state changes
     const res = await this._api.get(`/api/authorizations/${authID}/onchange`)
 
@@ -127,10 +134,13 @@ export class QtumRPCRaw {
     }
 
     if (auth.state === "accepted") {
-      return this.makeRPCCall({
-        ...rpcCall,
-        auth: auth.id,
-      })
+      return this.makeRPCCall(
+        {
+          ...rpcCall,
+          auth: auth.id
+        },
+        opts
+      )
     }
   }
 }

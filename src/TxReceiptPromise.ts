@@ -1,24 +1,43 @@
 import { EventEmitter } from "eventemitter3"
 
 import {
-  IRPCGetTransactionReceiptResult,
-  IRPCGetTransactionRequest,
-  IRPCGetTransactionResult,
-  QtumRPC,
-  IRPCGetTransactionResultEth,
-  TRANSITION_STATUS,
+  IQtumRPCGetTransactionReceiptResult,
+  IQtumRPCGetTransactionRequest,
+  IQtumRPCGetTransactionResult,
+  QtumRPC
 } from "./QtumRPC"
 import { sleep } from "./sleep"
+import {
+  EthRPC,
+  IEthRPCGetTransactionResult,
+  IEthRPCGetTransactionReceiptResult,
+  ETH_TRANSACTION_STATUS
+} from "./EthRPC"
 
-export type TxReceiptConfirmationHandler = (
-  tx: IRPCGetTransactionResult,
-  receipt: IRPCGetTransactionReceiptResult,
+export type QtumTxReceiptConfirmationHandler = (
+  tx: IQtumRPCGetTransactionResult,
+  receipt: IQtumRPCGetTransactionReceiptResult
 ) => any
 
-export type TxReceiptConfirmationHandlerEth = (
-  tx: IRPCGetTransactionResultEth,
-  receipt: IRPCGetTransactionReceiptResult,
+export type EthTxReceiptConfirmationHandler = (
+  tx: IEthRPCGetTransactionResult,
+  receipt: IEthRPCGetTransactionReceiptResult
 ) => any
+
+// lint not passing
+// type TxReceiptConfirmationHandler<T> = T extends QtumRPC
+//     ? TxReceiptConfirmationHandler
+//     : TxReceiptConfirmationHandlerEth
+// }
+
+interface IPolymorphicType<T> {
+  TxReceiptConfirmationHandler: T extends QtumRPC
+    ? QtumTxReceiptConfirmationHandler
+    : EthTxReceiptConfirmationHandler
+  RPCGetTransactionReceiptResult: T extends QtumRPC
+    ? IQtumRPCGetTransactionReceiptResult
+    : IEthRPCGetTransactionReceiptResult
+}
 
 const EVENT_CONFIRM = "confirm"
 
@@ -26,28 +45,27 @@ const HALF_ESTIMATED_AVERAGE_BLOCK_TIME = 7500
 
 // tslint:disable-next-line:no-empty-interface
 export interface ITxReceiptConfirmOptions {
-  pollInterval?: number,
+  pollInterval?: number
 }
 
-export class TxReceiptPromise {
+export class TxReceiptPromise<TypeRPC extends QtumRPC | EthRPC> {
   private _emitter: EventEmitter
 
-  constructor(
-    private _rpc: QtumRPC,
-    public txid: string,
-  ) {
+  constructor(private _rpc: TypeRPC, public txid: string) {
     this._emitter = new EventEmitter()
   }
 
   // TODO should return parsed logs with the receipt
   public async confirm(
     confirm: number = 6,
-    opts: ITxReceiptConfirmOptions = {},
-  ): Promise<IRPCGetTransactionReceiptResult> {
+    opts: ITxReceiptConfirmOptions = {}
+  ): Promise<IPolymorphicType<TypeRPC>["RPCGetTransactionReceiptResult"]> {
     const minconf = confirm
     const pollInterval = opts.pollInterval || 3000
 
-    const hasTxWaitSupport = await this._rpc.checkTransactionWaitSupport()
+    const { _rpc: rpc } = this
+    const hasTxWaitSupport =
+      rpc instanceof QtumRPC && (await rpc.checkTransactionWaitSupport())
 
     // if hasTxWaitSupport, make one long-poll per confirmation
     let curConfirmation = 1
@@ -55,20 +73,24 @@ export class TxReceiptPromise {
     let lastConfirmation = 0
 
     while (true) {
-      const req: IRPCGetTransactionRequest = { txid: this.txid }
+      const req: IQtumRPCGetTransactionRequest = { txid: this.txid }
 
       if (hasTxWaitSupport) {
         req.waitconf = curConfirmation
       }
 
-      const tx = await this._rpc.getTransaction(req)
-
-      if (isEthereumTransaction(tx)) {
-        return this.confirmEth(tx, confirm, opts)
+      let tx: IQtumRPCGetTransactionResult | IEthRPCGetTransactionResult
+      if (rpc instanceof QtumRPC) {
+        tx = await rpc.getTransaction(req)
+      } else if (rpc instanceof EthRPC) {
+        tx = await rpc.getTransaction(req.txid)
+        return this.confirmEth(tx, confirm, opts) as any
+      } else {
+        throw new Error("unsupported rpc type")
       }
 
       if (tx.confirmations > 0) {
-        const receipt = await this._rpc.getTransactionReceipt({ txid: tx.txid })
+        const receipt = await rpc.getTransactionReceipt({ txid: tx.txid })
 
         if (!receipt) {
           throw new Error("Cannot get transaction receipt")
@@ -90,7 +112,7 @@ export class TxReceiptPromise {
         if (tx.confirmations >= minconf) {
           // reached number of required confirmations. done
           this._emitter.removeAllListeners(EVENT_CONFIRM)
-          return receipt2
+          return receipt2 as any
         }
       }
 
@@ -105,34 +127,42 @@ export class TxReceiptPromise {
     }
   }
 
-  public onConfirm(fn: TxReceiptConfirmationHandler | TxReceiptConfirmationHandlerEth) {
+  public onConfirm(
+    fn: IPolymorphicType<TypeRPC>["TxReceiptConfirmationHandler"]
+  ) {
     this._emitter.on(EVENT_CONFIRM, fn)
   }
 
-  public offConfirm(fn: TxReceiptConfirmationHandler | TxReceiptConfirmationHandlerEth) {
+  public offConfirm(
+    fn: IPolymorphicType<TypeRPC>["TxReceiptConfirmationHandler"]
+  ) {
     this._emitter.off(EVENT_CONFIRM, fn)
   }
 
   private async confirmEth(
-    tx: IRPCGetTransactionResultEth,
+    tx: IEthRPCGetTransactionResult,
     requiredConfirmation: number = 6,
-    opts: ITxReceiptConfirmOptions = {},
-  ): Promise<IRPCGetTransactionReceiptResult> {
+    opts: ITxReceiptConfirmOptions = {}
+  ): Promise<IEthRPCGetTransactionReceiptResult> {
     const { txid } = this
+    const { pollInterval = HALF_ESTIMATED_AVERAGE_BLOCK_TIME } = opts
+
+    const rpc = this._rpc as EthRPC
+    let prevConfirmationCounter = 0
 
     while (true) {
-      const receipt = await this._rpc.getTransactionReceipt({ txid })
-      const currentBlockNumber = await this._rpc.getBlockNumber()
+      const receipt = await rpc.getTransactionReceipt(txid)
+      const currentBlockNumber = await rpc.getBlockNumber()
 
       // not yet confirmed or is pending
       if (receipt == null) {
-        await sleep(HALF_ESTIMATED_AVERAGE_BLOCK_TIME)
+        await sleep(pollInterval)
         continue
       }
 
       const hasTransactionError =
-        (receipt.status != null &&
-          Number(receipt.status) === TRANSITION_STATUS.FAILED)
+        receipt.status != null &&
+        Number(receipt.status) === ETH_TRANSACTION_STATUS.FAILED
       if (hasTransactionError) {
         throw new Error("Transaction process error")
       }
@@ -140,11 +170,25 @@ export class TxReceiptPromise {
       const receiptBlockNumber = receipt.blockNumber
 
       const confirmationCounter = currentBlockNumber - receiptBlockNumber
+      if (confirmationCounter === 0 && requiredConfirmation > 0) {
+        // ignore fresh receipt
+        await sleep(pollInterval)
+        continue
+      }
+
       if (confirmationCounter < requiredConfirmation) {
         // wait for more confirmations
-        this._emitter.emit(EVENT_CONFIRM, tx, receipt)
+        let confirmationCount = 1
+        if (confirmationCounter !== prevConfirmationCounter) {
+          confirmationCount = confirmationCounter - prevConfirmationCounter
+          prevConfirmationCounter = confirmationCount
+        }
 
-        await sleep(HALF_ESTIMATED_AVERAGE_BLOCK_TIME)
+        for (let i = 0; i < confirmationCount; i++) {
+          this._emitter.emit(EVENT_CONFIRM, tx, receipt)
+        }
+
+        await sleep(pollInterval)
         continue
       }
 
@@ -153,10 +197,4 @@ export class TxReceiptPromise {
       return receipt
     }
   }
-}
-
-export function isEthereumTransaction(
-  transaction: IRPCGetTransactionResult | IRPCGetTransactionResultEth
-): transaction is IRPCGetTransactionResultEth {
-  return (transaction as IRPCGetTransactionResult).amount == null
 }

@@ -9,7 +9,7 @@ import { Contract } from "./Contract"
  * @param repoData Information about Solidity contracts.
  */
 export class Qtum extends QtumRPC {
-  private repo: ContractsRepo
+  private repo: ContractsRepo<QtumRPC>
 
   constructor(providerURL: string, repoData?: IContractsRepoData) {
     super(providerURL)
@@ -30,7 +30,7 @@ export class Qtum extends QtumRPC {
    *
    * @param name The name of a deployed contract
    */
-  public contract(name: string): Contract {
+  public contract(name: string): Contract<QtumRPC> {
     return this.repo.contract(name)
   }
 }

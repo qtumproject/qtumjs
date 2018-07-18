@@ -1,9 +1,8 @@
 import "mocha"
 import { assert } from "chai"
 
-import { repoData, rpc, ethRpc, assertThrow } from "./test"
-import { Contract, IContractSendResult, IContractSendResultEth } from "./Contract"
-import { IRPCGetTransactionResult, IRPCGetTransactionResultEth } from "./QtumRPC"
+import { repoData, rpc, assertThrow } from "./test"
+import { Contract } from "./Contract"
 
 describe("Contract", () => {
   // don't act as sender
@@ -12,13 +11,7 @@ describe("Contract", () => {
     ...info
   } = repoData.contracts["test/contracts/Methods.sol"]
 
-  const {
-    sender: _sender,
-    ...infoEth
-  } = repoData.contracts.Methods
-
   const contract = new Contract(rpc, info)
-  const contractEth = new Contract(ethRpc, infoEth)
 
   describe("#call", async () => {
     it("calls a method and get returned value", async () => {
@@ -108,13 +101,13 @@ describe("Contract", () => {
     it("can send and confirm tx", async () => {
       const v = Math.floor(Math.random() * 1000000)
 
-      const tx = (await contract.send("setFoo", [v])) as IContractSendResult
+      const tx = await contract.send("setFoo", [v])
 
       assert.equal(tx.confirmations, 0)
 
       await rpc.rawCall("generate", [1])
 
-      const receipt = await tx.confirm(1, (r: IRPCGetTransactionResult) => {
+      const receipt = await tx.confirm(1, (r) => {
         assert.equal(r.confirmations, 1)
       })
 
@@ -134,44 +127,6 @@ describe("Contract", () => {
       ])
 
       const result = await contract.call("getFoo")
-      assert.equal(result.outputs[0].toNumber(), v)
-    })
-
-    it("throws error if method exists but is constant", async () => {
-      await assertThrow(async () => {
-        await contract.send("getFoo")
-      }, "method is contant")
-    })
-  })
-
-  describe("#send(eth)", async () => {
-    it("can send and confirm tx", async () => {
-      const v = Math.floor(Math.random() * 1000000)
-
-      const tx = (await contractEth.send("setFoo", [v])) as IContractSendResultEth
-
-      assert.equal(tx.from, process.env.ETH_SENDER)
-
-      const receipt = await tx.confirm(1, (r: IRPCGetTransactionResultEth) => {
-        assert.notEqual(r.blockHash, null)
-      })
-
-      assert.hasAllKeys(receipt, [
-        "blockHash",
-        "blockNumber",
-        "transactionHash",
-        "transactionIndex",
-        "from",
-        "to",
-        "excepted",
-        "cumulativeGasUsed",
-        "gasUsed",
-        "logs",
-        "rawlogs",
-        "status",
-      ])
-
-      const result = await contractEth.call("getFoo")
       assert.equal(result.outputs[0].toNumber(), v)
     })
 

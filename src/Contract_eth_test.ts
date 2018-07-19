@@ -9,7 +9,7 @@ describe("Contract", () => {
   const {
     sender: _,
     ...info
-  } = repoData.contracts["test/contracts/Methods.sol"]
+  } = repoData.contracts.eth_Methods
 
   const contract = new Contract(ethRpc, info)
 
@@ -51,7 +51,7 @@ describe("Contract", () => {
     })
 
     describe("method overloading", () => {
-      const overload = new Contract(ethRpc, repoData.contracts["test/contracts/MethodOverloading.sol"])
+      const overload = new Contract(ethRpc, repoData.contracts.eth_MethodOverloading)
 
       it("calls a method and get returned value", async () => {
         let result
@@ -81,7 +81,7 @@ describe("Contract", () => {
 
   describe("ABI encoding", async () => {
     it("can encode address[]", async () => {
-      const logs = new Contract(ethRpc, repoData.contracts["test/contracts/ArrayArguments.sol"])
+      const logs = new Contract(ethRpc, repoData.contracts.eth_ArrayArguments)
 
       const calldata = logs.encodeParams("takeArray", [[
         "aa00000000000000000000000000000000000011",
@@ -137,7 +137,7 @@ describe("Contract", () => {
 
   // eth call will not return logs
   // describe("event logs", () => {
-  //   const logs = new Contract(ethRpc, repoData.contracts["test/contracts/Logs.sol"])
+  //   const logs = new Contract(ethRpc, repoData.contracts["eth_Logs"])
 
   //   it("decodes logs for call", async () => {
   //     const result = await logs.call("emitFooEvent", ["abc"])

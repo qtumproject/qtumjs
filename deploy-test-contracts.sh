@@ -4,3 +4,9 @@ solar deploy test/contracts/Logs.sol --force
 solar deploy test/contracts/LogOfDependantContract.sol --force
 solar deploy test/contracts/ArrayArguments.sol --force
 solar deploy test/contracts/SenderFrom.sol --force
+solar deploy test/contracts/MethodOverloading.sol:eth_MethodOverloading --force
+solar deploy test/contracts/Methods.sol:eth_Methods --force
+solar deploy test/contracts/Logs.sol:eth_Logs --force
+solar deploy test/contracts/LogOfDependantContract.sol:eth_LogOfDependantContract --force
+solar deploy test/contracts/ArrayArguments.sol:eth_ArrayArguments --force
+solar deploy test/contracts/SenderFrom.sol:eth_SenderFrom --force

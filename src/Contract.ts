@@ -33,58 +33,6 @@ import { ITransactionLog } from "./rpcCommonTypes"
 
 type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>
 
-export interface IContractSendTx {
-  method: string
-  txid: string
-}
-
-export interface IRPCSendTransactionResult<T> {
-  /**
-   * The transaction id.
-   */
-  txid: string
-  /**
-   * QTUM address of the sender.
-   */
-  sender: T extends QtumRPC ? string: undefined
-  /**
-   * ripemd-160 hash of the sender.
-   */
-  hash160: T extends QtumRPC ? string: undefined
-}
-
-interface IPolymorphicTypes<T> {
-  contractSendConfirmationHandler: T extends QtumRPC
-    ? IQtumContractSendConfirmationHandler
-    : IEthContractSendConfirmationHandler
-  rPCCallResult: T extends QtumRPC ? IQtumRPCCallResult: string
-  callOpts: T extends QtumRPC
-    ? TypeQtumContractCallRequestOptions
-    : TypeEthContractCallRequestOptions
-  sendOpts: T extends QtumRPC
-    ? TypeQtumSendTransactionRequestOptions
-    : TypeEthSendTransactionRequestOptions
-  transactionReceipt: T extends QtumRPC
-    ? TypeQtumTransactionReceipt
-    : TypeEthTransactionReceipt
-  rawReceipt: T extends QtumRPC
-    ? IQtumRPCGetTransactionReceiptResult
-    : IEthRPCGetTransactionReceiptResult
-  receipt: T extends QtumRPC ? IQtumTransactionReceipt: IEthTransactionReceipt
-  contractSendResult: T extends QtumRPC
-    ? IQtumContractSendResult
-    : IEthContractSendResult
-}
-
-type TypeQtumContractCallRequestOptions = IContractCallRequestOptions<QtumRPC>
-type TypeEthContractCallRequestOptions = IContractCallRequestOptions<EthRPC>
-type TypeQtumSendTransactionRequestOptions = IContractSendRequestOptions<
-  QtumRPC
->
-type TypeEthSendTransactionRequestOptions = IContractSendRequestOptions<EthRPC>
-type TypeQtumTransactionReceipt = IQtumTransactionReceipt | null
-type TypeEthTransactionReceipt = IEthTransactionReceipt | null
-
 /**
  * The callback function invoked for each additional confirmation
  */
@@ -186,7 +134,7 @@ export interface IDeployedContractInfo extends IContractInfo {
 /**
  * The result of calling a contract method, with decoded outputs.
  */
-export interface ICallResult {
+export interface ICallResult<T> {
   /**
    * ABI-decoded outputs
    */
@@ -197,7 +145,7 @@ export interface ICallResult {
    */
   logs: Array<IDecodedSolidityEvent | null>
 
-  rawResult: IQtumRPCCallResult | string
+  rawResult: T extends QtumRPC ? IQtumRPCCallResult : string
 }
 
 /**
@@ -224,11 +172,9 @@ export interface IContractSendRequestOptions<T> {
    */
   from?: string
 
-  nonce: T extends QtumRPC ? undefined: optionalNumber
+  nonce?: T extends QtumRPC ? undefined : number
 }
 
-type optionalStringOrNumber = string | number | undefined
-type optionalNumber = number | undefined
 /**
  * Options for `call` to a contract method.
  */
@@ -238,10 +184,10 @@ export interface IContractCallRequestOptions<T> {
    */
   from?: string
 
-  gasLimit: T extends QtumRPC ? undefined: optionalStringOrNumber
-  gasPrice: T extends QtumRPC ? undefined: optionalStringOrNumber
-  value: T extends QtumRPC ? undefined: optionalStringOrNumber
-  blockNumber: T extends QtumRPC ? undefined: optionalStringOrNumber
+  gasLimit?: T extends QtumRPC ? undefined : (string | number)
+  gasPrice?: T extends QtumRPC ? undefined : (string | number)
+  value?: T extends QtumRPC ? undefined : (string | number)
+  blockNumber?: T extends QtumRPC ? undefined : (string | number)
 }
 
 /**
@@ -395,13 +341,13 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
   public async rawCall(
     method: string,
     args: any[] = [],
-    opts: IPolymorphicTypes<TypeRPC>["callOpts"] = {} as any
-  ): Promise<IPolymorphicTypes<TypeRPC>["rPCCallResult"]> {
+    opts: IContractCallRequestOptions<TypeRPC> = {}
+  ): Promise<TypeRPC extends QtumRPC ? IQtumRPCCallResult : string> {
     const calldata = this.encodeParams(method, args)
     const { rpc } = this
 
     if (rpc instanceof QtumRPC) {
-      const options = opts as TypeQtumContractCallRequestOptions
+      const options = opts as IContractCallRequestOptions<QtumRPC>
       const req = {
         ...options,
         from: options.from || this.info.sender,
@@ -409,17 +355,20 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
         data: calldata
       }
 
-      return rpc.call(req) as any
+      const resultTypeSafe: IQtumRPCCallResult = await rpc.call(req)
+      return resultTypeSafe as any
     }
 
     if (rpc instanceof EthRPC) {
-      const options = opts as TypeEthContractCallRequestOptions
+      const options = opts as IContractCallRequestOptions<EthRPC>
       const req = {
         ...options,
         to: this.address,
         data: calldata
       }
-      return rpc.call(req) as any
+
+      const resultTypeSafe: string = await rpc.call(req)
+      return resultTypeSafe as any
     }
 
     throw new Error("Unsupported rpc type")
@@ -437,8 +386,8 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
   public async call(
     method: string,
     args: any[] = [],
-    opts: IPolymorphicTypes<TypeRPC>["callOpts"] = {} as any
-  ): Promise<ICallResult> {
+    opts: IContractCallRequestOptions<TypeRPC> = {}
+  ): Promise<ICallResult<TypeRPC>> {
     const callResult = await this.rawCall(method, args, opts)
 
     let output = callResult as string
@@ -482,7 +431,7 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
   public async return(
     method: string,
     args: any[] = [],
-    opts: IPolymorphicTypes<TypeRPC>["callOpts"] = {} as any
+    opts: IContractCallRequestOptions<TypeRPC> = {}
   ): Promise<any> {
     const result = await this.call(method, args, opts)
     return result.outputs[0]
@@ -491,7 +440,7 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
   public async returnNumber(
     method: string,
     args: any[] = [],
-    opts: IPolymorphicTypes<TypeRPC>["callOpts"] = {} as any
+    opts: IContractCallRequestOptions<TypeRPC> = {}
   ): Promise<number> {
     const result = await this.call(method, args, opts)
     const val = result.outputs[0]
@@ -515,7 +464,7 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
   public async returnDate(
     method: string,
     args: any[] = [],
-    opts: IPolymorphicTypes<TypeRPC>["callOpts"] = {} as any
+    opts: IContractCallRequestOptions<TypeRPC> = {}
   ): Promise<Date> {
     const result = await this.return(method, args, opts)
     if (typeof result !== "number") {
@@ -541,7 +490,7 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
     targetBase: number | string,
     method: string,
     args: any[] = [],
-    opts: IPolymorphicTypes<TypeRPC>["callOpts"] = {} as any
+    opts: IContractCallRequestOptions<TypeRPC> = {}
   ): Promise<number> {
     const value = await this.return(method, args, opts)
 
@@ -579,7 +528,7 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
     converter: (val: any) => Type | Promise<Type>,
     method: string,
     args: any[] = [],
-    opts: IPolymorphicTypes<TypeRPC>["callOpts"] = {} as any
+    opts: IContractCallRequestOptions<TypeRPC> = {}
   ): Promise<Type> {
     const value = await this.return(method, args, opts)
     return await converter(value)
@@ -596,8 +545,12 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
   public async rawSend(
     method: string,
     args: any[],
-    opts: IPolymorphicTypes<TypeRPC>["sendOpts"] = {} as any
-  ): Promise<IRPCSendTransactionResult<TypeRPC>> {
+    opts: IContractSendRequestOptions<TypeRPC> = {}
+  ): Promise<
+    TypeRPC extends QtumRPC
+      ? IQtumRPCSendTransactionResult
+      : IEthRPCSendTransactionResult
+  > {
     // TODO opts: gas limit, gas price, sender address
     const methodABI = this.methodMap.findMethod(method, args)
     if (methodABI == null) {
@@ -612,7 +565,7 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
     const { rpc } = this
 
     if (rpc instanceof QtumRPC) {
-      const options = opts as TypeQtumSendTransactionRequestOptions
+      const options = opts as IContractSendRequestOptions<QtumRPC>
       const req = {
         ...options,
         to: this.address,
@@ -620,18 +573,24 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
         from: options.from || this.info.sender
       }
 
-      return rpc.sendTransaction(req) as any
+      const resultTypeSafe: IQtumRPCSendTransactionResult = await rpc.sendTransaction(
+        req
+      )
+      return resultTypeSafe as any
     }
 
     if (rpc instanceof EthRPC) {
-      const options = opts as TypeEthSendTransactionRequestOptions
+      const options = opts as IContractSendRequestOptions<EthRPC>
       const req = {
         ...options,
         to: this.address,
         data: calldata
       }
 
-      return rpc.sendTransaction(req) as any
+      const resultTypeSafe: IEthRPCSendTransactionResult = await rpc.sendTransaction(
+        req
+      )
+      return resultTypeSafe as any
     }
 
     throw new Error("Unsupported rpc type")
@@ -647,7 +606,9 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
   public async confirm(
     txid: string,
     confirm?: number,
-    onConfirm?: IPolymorphicTypes<TypeRPC>["contractSendConfirmationHandler"]
+    onConfirm?: TypeRPC extends QtumRPC
+      ? IQtumContractSendConfirmationHandler
+      : IEthContractSendConfirmationHandler
   ): Promise<IQtumTransactionReceipt> {
     const { rpc } = this
 
@@ -692,7 +653,11 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
    */
   public async receipt(
     txid: string
-  ): Promise<IPolymorphicTypes<TypeRPC>["transactionReceipt"]> {
+  ): Promise<
+    TypeRPC extends QtumRPC
+      ? (IQtumTransactionReceipt | null)
+      : (IEthTransactionReceipt | null)
+  > {
     const { rpc } = this
     if (rpc instanceof QtumRPC) {
       const receipt = await rpc.getTransactionReceipt({ txid })
@@ -718,8 +683,10 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
   public async send(
     method: string,
     args: any[] = [],
-    opts: IPolymorphicTypes<TypeRPC>["sendOpts"] = {} as any
-  ): Promise<IPolymorphicTypes<TypeRPC>["contractSendResult"]> {
+    opts: IContractSendRequestOptions<TypeRPC> = {}
+  ): Promise<
+    TypeRPC extends QtumRPC ? IQtumContractSendResult : IEthContractSendResult
+  > {
     const methodABI = this.methodMap.findMethod(method, args)
     if (methodABI == null) {
       throw new Error(`Unknown method to send: ${method}`)
@@ -736,7 +703,7 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
     let transaction: IQtumRPCGetTransactionResult | IEthRPCGetTransactionResult
     const { rpc } = this
     if (rpc instanceof QtumRPC) {
-      const options = opts as TypeQtumSendTransactionRequestOptions
+      const options = opts as IContractSendRequestOptions<QtumRPC>
       sentResult = await rpc.sendTransaction({
         ...options,
         from: options.from || this.info.sender,
@@ -747,7 +714,7 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
       txid = sentResult.txid
       transaction = await rpc.getTransaction({ txid })
     } else if (rpc instanceof EthRPC) {
-      const options = opts as TypeEthSendTransactionRequestOptions
+      const options = opts as IContractSendRequestOptions<EthRPC>
       sentResult = await rpc.sendTransaction({
         ...options,
         data: calldata,
@@ -755,7 +722,7 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
       })
 
       txid = sentResult.txid
-      transaction = await rpc.getTransaction(txid)
+      transaction = (await rpc.getTransaction(txid))!
     } else {
       throw new Error("Unsupported rpc type")
     }
@@ -863,8 +830,12 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
   }
 
   private _makeSendTxReceipt(
-    receipt: IPolymorphicTypes<TypeRPC>["rawReceipt"]
-  ): IPolymorphicTypes<TypeRPC>["receipt"] {
+    receipt: TypeRPC extends QtumRPC
+      ? IQtumRPCGetTransactionReceiptResult
+      : IEthRPCGetTransactionReceiptResult
+  ): TypeRPC extends QtumRPC
+    ? IQtumTransactionReceipt
+    : IEthTransactionReceipt {
     // https://stackoverflow.com/a/34710102
     // ...receiptNoLog will be a copy of receipt, without the `log` property
 

@@ -24,21 +24,6 @@ export type EthTxReceiptConfirmationHandler = (
   receipt: IEthRPCGetTransactionReceiptResult
 ) => any
 
-// lint not passing
-// type TxReceiptConfirmationHandler<T> = T extends QtumRPC
-//     ? TxReceiptConfirmationHandler
-//     : TxReceiptConfirmationHandlerEth
-// }
-
-interface IPolymorphicType<T> {
-  TxReceiptConfirmationHandler: T extends QtumRPC
-    ? QtumTxReceiptConfirmationHandler
-    : EthTxReceiptConfirmationHandler
-  RPCGetTransactionReceiptResult: T extends QtumRPC
-    ? IQtumRPCGetTransactionReceiptResult
-    : IEthRPCGetTransactionReceiptResult
-}
-
 const EVENT_CONFIRM = "confirm"
 
 const HALF_ESTIMATED_AVERAGE_BLOCK_TIME = 7500
@@ -59,7 +44,11 @@ export class TxReceiptPromise<TypeRPC extends QtumRPC | EthRPC> {
   public async confirm(
     confirm: number = 6,
     opts: ITxReceiptConfirmOptions = {}
-  ): Promise<IPolymorphicType<TypeRPC>["RPCGetTransactionReceiptResult"]> {
+  ): Promise<
+    TypeRPC extends QtumRPC
+      ? IQtumRPCGetTransactionReceiptResult
+      : IEthRPCGetTransactionReceiptResult
+  > {
     const minconf = confirm
     const pollInterval = opts.pollInterval || 3000
 
@@ -79,11 +68,14 @@ export class TxReceiptPromise<TypeRPC extends QtumRPC | EthRPC> {
         req.waitconf = curConfirmation
       }
 
-      let tx: IQtumRPCGetTransactionResult | IEthRPCGetTransactionResult
+      let tx: IQtumRPCGetTransactionResult | IEthRPCGetTransactionResult | null
       if (rpc instanceof QtumRPC) {
         tx = await rpc.getTransaction(req)
       } else if (rpc instanceof EthRPC) {
         tx = await rpc.getTransaction(req.txid)
+        if (tx == null) {
+          throw new Error(`Cannot find transaction(${tx}`)
+        }
         return this.confirmEth(tx, confirm, opts) as any
       } else {
         throw new Error("unsupported rpc type")
@@ -128,13 +120,17 @@ export class TxReceiptPromise<TypeRPC extends QtumRPC | EthRPC> {
   }
 
   public onConfirm(
-    fn: IPolymorphicType<TypeRPC>["TxReceiptConfirmationHandler"]
+    fn: TypeRPC extends QtumRPC
+      ? QtumTxReceiptConfirmationHandler
+      : EthTxReceiptConfirmationHandler
   ) {
     this._emitter.on(EVENT_CONFIRM, fn)
   }
 
   public offConfirm(
-    fn: IPolymorphicType<TypeRPC>["TxReceiptConfirmationHandler"]
+    fn: TypeRPC extends QtumRPC
+      ? QtumTxReceiptConfirmationHandler
+      : EthTxReceiptConfirmationHandler
   ) {
     this._emitter.off(EVENT_CONFIRM, fn)
   }

@@ -197,7 +197,7 @@ export class EthRPC extends RPCRaw {
 
   public async getTransaction(
     txid: string
-  ): Promise<IEthRPCGetTransactionResult> {
+  ): Promise<IEthRPCGetTransactionResult | null> {
     const args = [txid]
 
     return this.rawCall("eth_getTransactionByHash", args)
@@ -211,7 +211,18 @@ export class EthRPC extends RPCRaw {
       return null
     }
 
-    return receipt
+    let { from, to } = receipt
+    if (from == null && to == null) {
+      // eth_getTransactionReceipt on testrpc (and some other clients?) will not
+      // return `from` and `to`
+      ({ from, to } = (await this.getTransaction(txid))!)
+    }
+
+    return {
+      ...receipt,
+      from,
+      to
+    }
   }
 
   public async getGasPrice(): Promise<string> {

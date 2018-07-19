@@ -1,7 +1,7 @@
 import "mocha"
 import { assert } from "chai"
 
-import { repoData, rpc, assertThrow } from "./test"
+import { repoData, ethRpc, assertThrow } from "./test"
 import { Contract } from "./Contract"
 
 describe("Contract", () => {
@@ -11,7 +11,7 @@ describe("Contract", () => {
     ...info
   } = repoData.contracts["test/contracts/Methods.sol"]
 
-  const contract = new Contract(rpc, info)
+  const contract = new Contract(ethRpc, info)
 
   describe("#call", async () => {
     it("calls a method and get returned value", async () => {
@@ -19,7 +19,7 @@ describe("Contract", () => {
       assert.hasAllKeys(result, [
         "logs",
         "outputs",
-        "rawResult",
+        "rawResult"
       ])
 
       const {
@@ -27,11 +27,7 @@ describe("Contract", () => {
         rawResult,
       } = result
 
-      assert.hasAllKeys(rawResult, [
-        "address",
-        "executionResult",
-        "transactionReceipt",
-      ])
+      assert.isString(rawResult)
       assert.isArray(outputs)
       assert.isNumber(outputs[0].toNumber())
     })
@@ -55,7 +51,7 @@ describe("Contract", () => {
     })
 
     describe("method overloading", () => {
-      const overload = new Contract(rpc, repoData.contracts["test/contracts/MethodOverloading.sol"])
+      const overload = new Contract(ethRpc, repoData.contracts["test/contracts/MethodOverloading.sol"])
 
       it("calls a method and get returned value", async () => {
         let result
@@ -85,7 +81,7 @@ describe("Contract", () => {
 
   describe("ABI encoding", async () => {
     it("can encode address[]", async () => {
-      const logs = new Contract(rpc, repoData.contracts["test/contracts/ArrayArguments.sol"])
+      const logs = new Contract(ethRpc, repoData.contracts["test/contracts/ArrayArguments.sol"])
 
       const calldata = logs.encodeParams("takeArray", [[
         "aa00000000000000000000000000000000000011",
@@ -107,12 +103,9 @@ describe("Contract", () => {
 
       const tx = await contract.send("setFoo", [v])
 
-      assert.equal(tx.confirmations, 0)
-
-      await rpc.rawCall("generate", [1])
-
-      const receipt = await tx.confirm(1, (r) => {
-        assert.equal(r.confirmations, 1)
+      // testrpc will not automatic mining, so we can't use tx.confirm(1) here
+      const receipt = await tx.confirm(0, (_r) => {
+        //
       })
 
       assert.hasAllKeys(receipt, [
@@ -122,12 +115,13 @@ describe("Contract", () => {
         "transactionIndex",
         "from",
         "to",
-        "excepted",
         "cumulativeGasUsed",
         "gasUsed",
         "contractAddress",
         "logs",
         "rawlogs",
+        "logsBloom",
+        "status"
       ])
 
       const result = await contract.call("getFoo")
@@ -141,17 +135,18 @@ describe("Contract", () => {
     })
   })
 
-  describe("event logs", () => {
-    const logs = new Contract(rpc, repoData.contracts["test/contracts/Logs.sol"])
+  // eth call will not return logs
+  // describe("event logs", () => {
+  //   const logs = new Contract(ethRpc, repoData.contracts["test/contracts/Logs.sol"])
 
-    it("decodes logs for call", async () => {
-      const result = await logs.call("emitFooEvent", ["abc"])
-      assert.deepEqual(result.logs, [
-        {
-          type: "FooEvent",
-          a: "abc",
-        },
-      ])
-    })
-  })
+  //   it("decodes logs for call", async () => {
+  //     const result = await logs.call("emitFooEvent", ["abc"])
+  //     assert.deepEqual(result.logs, [
+  //       {
+  //         type: "FooEvent",
+  //         a: "abc",
+  //       },
+  //     ])
+  //   })
+  // })
 })

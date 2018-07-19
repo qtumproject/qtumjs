@@ -316,7 +316,9 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
     this.methodMap = new MethodMap(info.abi)
     this.address = info.address
 
-    this._logDecoder = opts.logDecoder || new ContractLogDecoder(this.info.abi)
+    this._logDecoder =
+      opts.logDecoder ||
+      new ContractLogDecoder(this.info.abi, this.rpc instanceof QtumRPC)
 
     // this._useBigNumber = false
   }
@@ -327,7 +329,7 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
       throw new Error(`Unknown method to call: ${method}`)
     }
 
-    return encodeInputs(methodABI, args)
+    return encodeInputs(methodABI, args, this.rpc instanceof QtumRPC)
   }
 
   /**
@@ -409,7 +411,11 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
     let decodedOutputs = []
     if (output !== "") {
       const methodABI = this.methodMap.findMethod(method, args)!
-      decodedOutputs = decodeOutputs(methodABI, output)
+      decodedOutputs = decodeOutputs(
+        methodABI,
+        output,
+        this.rpc instanceof QtumRPC
+      )
     }
 
     return {
@@ -561,7 +567,7 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
       throw new Error(`Cannot send to a constant method: ${method}`)
     }
 
-    const calldata = encodeInputs(methodABI, args)
+    const calldata = encodeInputs(methodABI, args, this.rpc instanceof QtumRPC)
     const { rpc } = this
 
     if (rpc instanceof QtumRPC) {
@@ -696,7 +702,7 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
       throw new Error(`cannot send to a constant method: ${method}`)
     }
 
-    const calldata = encodeInputs(methodABI, args)
+    const calldata = encodeInputs(methodABI, args, this.rpc instanceof QtumRPC)
 
     let sentResult: IQtumRPCSendTransactionResult | IEthRPCSendTransactionResult
     let txid: string

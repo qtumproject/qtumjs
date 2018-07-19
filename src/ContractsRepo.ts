@@ -50,7 +50,7 @@ export class ContractsRepo<TypeRPC extends QtumRPC | EthRPC> {
 
   constructor(private rpc: TypeRPC, private repoData: IContractsRepoData) {
     const eventABIs = this.allEventABIs()
-    this.logDecoder = new ContractLogDecoder(eventABIs)
+    this.logDecoder = new ContractLogDecoder(eventABIs, rpc instanceof QtumRPC)
   }
 
   public contract(name: string): Contract<TypeRPC> {

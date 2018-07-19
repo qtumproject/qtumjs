@@ -91,7 +91,7 @@ describe("Contract", () => {
       assert.equal(
         calldata,
         // tslint:disable-next-line:max-line-length
-        `ee3b88ea00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000aa00000000000000000000000000000000000011000000000000000000000000bb00000000000000000000000000000000000022`,
+        `0xee3b88ea00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000aa00000000000000000000000000000000000011000000000000000000000000bb00000000000000000000000000000000000022`,
       )
 
     })
@@ -135,18 +135,18 @@ describe("Contract", () => {
     })
   })
 
-  // eth call will not return logs
-  // describe("event logs", () => {
-  //   const logs = new Contract(ethRpc, repoData.contracts["eth_Logs"])
+  describe("event logs", () => {
+    const logs = new Contract(ethRpc, repoData.contracts.eth_Logs)
 
-  //   it("decodes logs for call", async () => {
-  //     const result = await logs.call("emitFooEvent", ["abc"])
-  //     assert.deepEqual(result.logs, [
-  //       {
-  //         type: "FooEvent",
-  //         a: "abc",
-  //       },
-  //     ])
-  //   })
-  // })
+    it("decodes logs for call", async () => {
+      const tx = await logs.send("emitFooEvent", ["abc"])
+      const receipt = await tx.confirm(0)
+      assert.deepEqual(receipt.logs, [
+        {
+          type: "FooEvent",
+          a: "abc",
+        },
+      ])
+    })
+  })
 })

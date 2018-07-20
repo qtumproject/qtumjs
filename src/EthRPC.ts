@@ -1,5 +1,5 @@
 import { RPCRaw } from "./RPCRaw"
-import { ITransactionLog } from "./rpcCommonTypes"
+import { ITransactionLog, IPromiseCancel } from "./rpcCommonTypes"
 
 export interface IEthRPCSendTransactionRequest {
   /**
@@ -32,7 +32,7 @@ export interface IEthRPCSendTransactionRequest {
    */
   gasPrice?: number | string
 
-  nonce?: number
+  nonce?: number | string
 }
 
 export interface IEthRPCSendTransactionResult {
@@ -61,7 +61,10 @@ export interface IEthRPCCallRequest {
   gasLimit?: number | string
   gasPrice?: number | string
   value?: number | string
-  blockNumber?: number | string
+  /**
+   * integer block number, or the string "latest", "earliest" or "pending"
+   */
+  blockNumber?: typeBlockTags
 }
 
 /**
@@ -110,6 +113,81 @@ export interface IEthRPCGetTransactionReceiptResult
   logs: ITransactionLog[]
   logsBloom: string
   status?: ETH_TRANSACTION_STATUS
+}
+
+export type typeBlockTags = number | "latest" | "pending" | "earliest"
+
+export interface IEthRPCGetLogsRequest {
+  /**
+   * The block number to start looking for logs.
+   */
+  fromBlock?: typeBlockTags
+
+  /**
+   * The block number to stop looking for logs.
+   */
+  toBlock?: typeBlockTags
+
+  /**
+   * contract address
+   */
+  address?: string[] | string
+
+  /**
+   * filter topics
+   */
+  topics?: Array<string | null>
+}
+
+export interface IEthLogEntry {
+  /**
+   *  `true` when the log was removed, due to a chain reorganization. `false` if
+   * its a valid log.
+   */
+  removed: boolean
+
+  /**
+   * integer of the log index position in the block. `null` when its pending.
+   */
+  logIndex: string | null
+
+  /**
+   * integer of the transactions index position log was created from. `null`
+   * when its pending
+   */
+  transactionIndex: string | null
+
+  /**
+   * hash of the transactions this log was created from. `null` when its pending
+   */
+  transactionHash: string | null
+
+  /**
+   * hash of the block where this log was in. `null` when its pending.
+   */
+  blockHash: string | null
+
+  /**
+   * the block number where this log was in. `null` when its pending
+   */
+  blockNumber: string | null
+
+  /**
+   * address from which this log originated
+   */
+  address: string
+
+  /**
+   * contains one or more 32 Bytes non-indexed arguments of the log.
+   */
+  data: string
+
+  /**
+   * Array of 0 to 4 32 Bytes data of indexed log arguments. (In solidity: The
+   * first topic is the hash of the signature of the event, except you declared
+   * the event with the `anonymous` specifier
+   */
+  topics: string[]
 }
 
 const DEFAULT_GAS_LIMIT = 200000
@@ -215,7 +293,9 @@ export class EthRPC extends RPCRaw {
     if (from == null && to == null) {
       // eth_getTransactionReceipt on testrpc (and some other clients?) will not
       // return `from` and `to`
-      ({ from, to } = (await this.getTransaction(txid))!)
+      const tx = (await this.getTransaction(txid))!
+      from = tx.from
+      to = tx.to
     }
 
     return {
@@ -236,5 +316,37 @@ export class EthRPC extends RPCRaw {
 
   public async getAccounts(): Promise<string[]> {
     return this.rawCall("eth_accounts")
+  }
+
+  public async getTransactionCount(
+    address: string,
+    block: typeBlockTags = "latest"
+  ): Promise<number> {
+    const count = await this.rawCall("eth_getTransactionCount", [
+      address,
+      block
+    ])
+    return Number(count)
+  }
+
+  public async getBalance(
+    address: string,
+    block: typeBlockTags = "latest"
+  ): Promise<string> {
+    return await this.rawCall("eth_getBalance", [address, block])
+  }
+
+  public getLogs(
+    req: IEthRPCGetLogsRequest = {}
+  ): IPromiseCancel<IEthLogEntry[]> {
+    const cancelTokenSource = this.cancelTokenSource()
+
+    const result = this.rawCall("eth_getLogs", [req], {
+      cancelToken: cancelTokenSource.token
+    }) as IPromiseCancel<any>
+
+    return Object.assign(result, {
+      cancel: cancelTokenSource.cancel.bind(cancelTokenSource)
+    })
   }
 }

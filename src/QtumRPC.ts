@@ -1,5 +1,5 @@
 import { RPCRaw } from "./RPCRaw"
-import { ITransactionLog } from "./rpcCommonTypes"
+import { ITransactionLog, IPromiseCancel } from "./rpcCommonTypes"
 
 export interface IGetInfoResult {
   version: number
@@ -194,7 +194,7 @@ const SEND_TRANSACTION_REQUEST_DEFAULTS = {
   gasPrice: 0.0000004
 }
 
-export interface IRPCWaitForLogsRequest {
+export interface IQtumRPCGetLogsRequest {
   /**
    * The block number to start looking for logs.
    */
@@ -224,7 +224,7 @@ export interface ILogFilter {
 /**
  * The raw log data returned by qtumd, not ABI decoded.
  */
-export interface ILogEntry extends IQtumRPCGetTransactionReceiptBase {
+export interface IQtumLogEntry extends IQtumRPCGetTransactionReceiptBase {
   /**
    * EVM log topics
    */
@@ -236,13 +236,13 @@ export interface ILogEntry extends IQtumRPCGetTransactionReceiptBase {
   data: string
 }
 
-export interface IRPCWaitForLogsResult {
-  entries: ILogEntry[]
+export interface IQtumRPCGetLogsResult {
+  entries: IQtumLogEntry[]
   count: number
   nextblock: number
 }
 
-export interface IRPCSearchLogsRequest {
+export interface IQtumRPCSearchLogsRequest {
   /**
    * The number of the earliest block (latest may be given to mean the most recent block).
    * (default = "latest")
@@ -274,10 +274,6 @@ export interface IRPCSearchLogsRequest {
 }
 
 export type IRPCSearchLogsResult = IQtumRPCGetTransactionReceiptResult[]
-
-export interface IPromiseCancel<T> extends Promise<T> {
-  cancel: () => void
-}
 
 export class QtumRPC extends RPCRaw {
   private _hasTxWaitSupport: boolean | undefined
@@ -353,24 +349,25 @@ export class QtumRPC extends RPCRaw {
   /**
    * Long-poll request to get logs. Cancel the returned promise to terminate polling early.
    */
-  public waitforlogs(
-    req: IRPCWaitForLogsRequest = {}
-  ): IPromiseCancel<IRPCWaitForLogsResult> {
-    const args = [req.fromBlock, req.toBlock, req.filter, req.minconf]
+  public getLogs(
+    req: IQtumRPCGetLogsRequest = {}
+  ): IPromiseCancel<IQtumRPCGetLogsResult> {
+    const { filter = {} } = req
+    const args = [req.fromBlock, req.toBlock, filter, req.minconf]
 
     const cancelTokenSource = this.cancelTokenSource()
 
     const p = this.rawCall("waitforlogs", args, {
       cancelToken: cancelTokenSource.token
-    })
+    }) as IPromiseCancel<any>
 
     return Object.assign(p, {
       cancel: cancelTokenSource.cancel.bind(cancelTokenSource)
-    }) as any
+    })
   }
 
   public async searchlogs(
-    _req: IRPCSearchLogsRequest = {}
+    _req: IQtumRPCSearchLogsRequest = {}
   ): Promise<IRPCSearchLogsResult> {
     const searchlogsDefaults = {
       fromBlock: "latest",

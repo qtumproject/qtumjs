@@ -13,7 +13,7 @@ describe("EventListener", () => {
     const listener = repo.eventListener()
 
     const contract = repo.contract("test/contracts/LogOfDependantContract.sol")
-    const logPromise = listener.waitLogs({ minconf: 0 })
+    const logPromise = listener.getLogs({ minconf: 0 })
 
     const tx = await contract.send("emitLog")
 
@@ -45,7 +45,7 @@ describe("EventListener", () => {
 
     const listener = repo2.eventListener()
 
-    const logPromise = listener.waitLogs({ minconf: 0 })
+    const logPromise = listener.getLogs({ minconf: 0 })
     const tx = logContract.send("emitMultipleEvents", ["test!"])
     generateBlock()
 

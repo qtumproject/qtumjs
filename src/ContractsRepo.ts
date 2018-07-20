@@ -63,8 +63,8 @@ export class ContractsRepo<TypeRPC extends QtumRPC | EthRPC> {
     return new Contract(this.rpc, info, { logDecoder: this.logDecoder })
   }
 
-  public eventListener(): EventListener {
-    return new EventListener(this.rpc as QtumRPC, this.logDecoder)
+  public eventListener(): EventListener<TypeRPC> {
+    return new EventListener(this.rpc, this.logDecoder)
   }
 
   /**

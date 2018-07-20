@@ -14,8 +14,8 @@ import {
   IQtumRPCGetTransactionReceiptResult,
   IQtumRPCGetTransactionResult,
   QtumRPC,
-  IRPCWaitForLogsRequest,
-  ILogEntry,
+  IQtumRPCGetLogsRequest,
+  IQtumLogEntry,
   IQtumRPCSendTransactionResult
 } from "./QtumRPC"
 
@@ -27,9 +27,13 @@ import {
   IEthRPCGetTransactionResult,
   IEthRPCGetTransactionReceiptBase,
   IEthRPCSendTransactionResult,
-  IEthRPCGetTransactionReceiptResult
+  IEthRPCGetTransactionReceiptResult,
+  typeBlockTags,
+  IEthLogEntry,
+  IEthRPCGetLogsRequest
 } from "./EthRPC"
 import { ITransactionLog } from "./rpcCommonTypes"
+import { sleep } from "./sleep"
 
 type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>
 
@@ -134,7 +138,7 @@ export interface IDeployedContractInfo extends IContractInfo {
 /**
  * The result of calling a contract method, with decoded outputs.
  */
-export interface ICallResult<T> {
+export interface ICallResult<T extends QtumRPC | EthRPC> {
   /**
    * ABI-decoded outputs
    */
@@ -142,6 +146,7 @@ export interface ICallResult<T> {
 
   /**
    * ABI-decoded logs
+   * note: ethereum call result will not contain any logs
    */
   logs: Array<IDecodedSolidityEvent | null>
 
@@ -151,7 +156,7 @@ export interface ICallResult<T> {
 /**
  * Options for `send` to a contract method.
  */
-export interface IContractSendRequestOptions<T> {
+export interface IContractSendRequestOptions<T extends QtumRPC | EthRPC> {
   /**
    * The amount in QTUM to send. eg 0.1, default: 0
    */
@@ -172,13 +177,13 @@ export interface IContractSendRequestOptions<T> {
    */
   from?: string
 
-  nonce?: T extends QtumRPC ? undefined : number
+  nonce?: T extends QtumRPC ? undefined : (number | string)
 }
 
 /**
  * Options for `call` to a contract method.
  */
-export interface IContractCallRequestOptions<T> {
+export interface IContractCallRequestOptions<T extends QtumRPC | EthRPC> {
   /**
    * The quantum/ethereum address that will be used as sender.
    */
@@ -187,7 +192,7 @@ export interface IContractCallRequestOptions<T> {
   gasLimit?: T extends QtumRPC ? undefined : (string | number)
   gasPrice?: T extends QtumRPC ? undefined : (string | number)
   value?: T extends QtumRPC ? undefined : (string | number)
-  blockNumber?: T extends QtumRPC ? undefined : (string | number)
+  blockNumber?: T extends QtumRPC ? undefined : typeBlockTags
 }
 
 /**
@@ -237,14 +242,24 @@ export interface IEthTransactionReceipt
   rawlogs: ITransactionLog[]
 }
 
-export interface IContractLog<T> extends ILogEntry {
+export interface IContractLog<T> extends IQtumLogEntry {
   event: T
 }
 
 /**
  * A decoded contract event log.
  */
-export interface IContractEventLog extends ILogEntry {
+export interface IQtumContractEventLog extends IQtumLogEntry {
+  /**
+   * Solidity event, ABI decoded. Null if no ABI definition is found.
+   */
+  event?: IDecodedSolidityEvent | null
+}
+
+/**
+ * A decoded contract event log.
+ */
+export interface IEthContractEventLog extends IEthLogEntry {
   /**
    * Solidity event, ABI decoded. Null if no ABI definition is found.
    */
@@ -254,11 +269,11 @@ export interface IContractEventLog extends ILogEntry {
 /**
  * Query result of a contract's event logs.
  */
-export interface IContractEventLogs {
+export interface IQtumContractEventLogs {
   /**
    * Event logs, ABI decoded.
    */
-  entries: IContractEventLog[]
+  entries: IQtumContractEventLog[]
 
   /**
    * Number of event logs returned.
@@ -285,6 +300,8 @@ export interface IContractInitOptions {
    */
   useBigNumber?: boolean
 }
+
+const ETH_HALF_ESTIMATED_AVERAGE_BLOCK_TIME = 7500
 
 /**
  * Contract represents a Smart Contract deployed on the blockchain.
@@ -487,18 +504,39 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
    * the desired currency unit.
    *
    * @param targetBase The currency unit to convert to. If a number, it is
-   * treated as the power of 10. -8 is satoshi. 0 is the canonical unit.
+   * treated as the power of 10.
+   * In Qtum, -8 is satoshi, 0 is the canonical unit.
+   * In Ethereum, 0 is wei, 9 is gwei, 18 is ether, etc.
    * @param method
    * @param args
    * @param opts
    */
   public async returnCurrency(
-    targetBase: number | string,
+    targetBase: TypeRPC extends QtumRPC
+      ? number | "qtum" | "btc" | "sat" | "satoshi"
+      : (
+          | number
+          | "ether"
+          | "milliether"
+          | "finney"
+          | "microether"
+          | "szabo"
+          | "gwei"
+          | "shannon"
+          | "mwei"
+          | "lovelace"
+          | "kwei"
+          | "babbage"
+          | "wei"),
     method: string,
     args: any[] = [],
     opts: IContractCallRequestOptions<TypeRPC> = {}
   ): Promise<number> {
-    const value = await this.return(method, args, opts)
+    let value = await this.return(method, args, opts)
+
+    if (typeof value === "object" && typeof value.toNumber === "function") {
+      value = value.toNumber()
+    }
 
     if (typeof value !== "number") {
       throw Error(
@@ -511,8 +549,8 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
     if (typeof targetBase === "number") {
       base = targetBase
     } else {
-      // TODO: support ethereum unit
       switch (targetBase) {
+        // qtum units
         case "qtum":
         case "btc":
           base = 0
@@ -520,14 +558,51 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
         case "sat":
         case "satoshi":
           base = -8
+          break
+        // ethereum units
+        case "ether":
+          base = 18
+          break
+        case "milliether":
+        case "finney":
+          base = 15
+          break
+        case "microether":
+        case "szabo":
+          base = 12
+          break
+        case "gwei":
+        case "shannon":
+          base = 9
+          break
+        case "mwei":
+        case "lovelace":
+          base = 6
+          break
+        case "kwei":
+        case "babbage":
+          base = 3
+          break
+        case "wei":
+          base = 0
+          break
         default:
           throw Error(`Unknown base currency unit: ${targetBase}`)
       }
     }
 
-    const satoshi = 1e-8
+    const { rpc } = this
+    if (rpc instanceof QtumRPC) {
+      const satoshi = 1e-8
 
-    return (value * satoshi) / 10 ** base
+      return (value * satoshi) / 10 ** base
+    }
+
+    if (rpc instanceof EthRPC) {
+      return value * 10 ** base
+    }
+
+    throw new Error("Unsupported rpc type")
   }
 
   public async returnAs<Type>(
@@ -704,13 +779,12 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
 
     const calldata = encodeInputs(methodABI, args, this.rpc instanceof QtumRPC)
 
-    let sentResult: IQtumRPCSendTransactionResult | IEthRPCSendTransactionResult
     let txid: string
     let transaction: IQtumRPCGetTransactionResult | IEthRPCGetTransactionResult
     const { rpc } = this
     if (rpc instanceof QtumRPC) {
       const options = opts as IContractSendRequestOptions<QtumRPC>
-      sentResult = await rpc.sendTransaction({
+      const sentResult = await rpc.sendTransaction({
         ...options,
         from: options.from || this.info.sender,
         to: this.address,
@@ -721,7 +795,7 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
       transaction = await rpc.getTransaction({ txid })
     } else if (rpc instanceof EthRPC) {
       const options = opts as IContractSendRequestOptions<EthRPC>
-      sentResult = await rpc.sendTransaction({
+      const sentResult = await rpc.sendTransaction({
         ...options,
         data: calldata,
         to: this.address
@@ -750,12 +824,16 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
    * @param req
    */
   public async logs(
-    req: IRPCWaitForLogsRequest = {}
-  ): Promise<IContractEventLogs> {
-    return this.waitLogs({
+    req: TypeRPC extends QtumRPC
+      ? IQtumRPCGetLogsRequest
+      : IEthRPCGetLogsRequest = {} as any
+  ): Promise<
+    TypeRPC extends QtumRPC ? IQtumContractEventLogs : IEthContractEventLog[]
+  > {
+    return this.getLogs({
       fromBlock: 0,
       toBlock: "latest",
-      ...req
+      ...(req as any)
     })
   }
 
@@ -763,64 +841,144 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
    * Get contract event logs. Long-poll wait if no log is found.
    * @param req (optional) IRPCWaitForLogsRequest
    */
-  public async waitLogs(
-    req: IRPCWaitForLogsRequest = {}
-  ): Promise<IContractEventLogs> {
-    const filter = req.filter || {}
-    if (!filter.addresses) {
-      filter.addresses = [this.address]
-    }
-
-    const result = await (this.rpc as QtumRPC).waitforlogs({
-      ...req,
-      filter
-    })
-
-    const entries = result.entries.map((entry) => {
-      const parsedLog = this.logDecoder.decode(entry)
-      return {
-        ...entry,
-        event: parsedLog
+  public async getLogs(
+    req: TypeRPC extends QtumRPC
+      ? IQtumRPCGetLogsRequest
+      : IEthRPCGetLogsRequest = {} as any
+  ): Promise<
+    TypeRPC extends QtumRPC ? IQtumContractEventLogs : IEthContractEventLog[]
+  > {
+    const { rpc } = this
+    if (rpc instanceof QtumRPC) {
+      const reqTypeSafe = req as IQtumRPCGetLogsRequest
+      const filter = reqTypeSafe.filter || {}
+      if (!filter.addresses) {
+        filter.addresses = [this.address]
       }
-    })
 
-    return {
-      ...result,
-      entries
+      const result = await rpc.getLogs({
+        ...reqTypeSafe,
+        filter
+      })
+
+      const entries = result.entries.map((entry) => {
+        const parsedLog = this.logDecoder.decode(entry)
+        return {
+          ...entry,
+          event: parsedLog
+        }
+      })
+
+      const resultTypeSafe: IQtumContractEventLogs = {
+        ...result,
+        entries
+      }
+
+      return resultTypeSafe as any
     }
+
+    if (rpc instanceof EthRPC) {
+      const reqTypeSafe = req as IEthRPCGetLogsRequest
+      const result = await rpc.getLogs({
+        ...reqTypeSafe,
+        address: this.address
+      })
+
+      const entries: IEthContractEventLog[] = result.map((entry) => {
+        const parsedLog = this.logDecoder.decode(entry)
+        return {
+          ...entry,
+          event: parsedLog
+        }
+      })
+
+      return entries as any
+    }
+
+    throw new Error("Unsupported rpc type")
   }
 
   /**
    * Subscribe to contract's events, using callback interface.
    */
   public onLog(
-    fn: (entry: IContractEventLog) => void,
-    opts: IRPCWaitForLogsRequest = {}
+    fn: (
+      entry: TypeRPC extends QtumRPC
+        ? IQtumContractEventLog
+        : IEthContractEventLog
+    ) => void,
+    opts: TypeRPC extends QtumRPC
+      ? IQtumRPCGetLogsRequest
+      : IEthRPCGetLogsRequest = {} as any
   ) {
-    let nextblock = opts.fromBlock || "latest"
+    let fromBlock = opts.fromBlock || "latest"
+    let toBlock = opts.toBlock || "latest"
+
+    let canceled = false
+    let ethLatestBlockNum: number
+    const { rpc } = this
+    const isEth = rpc instanceof EthRPC
+    const fetchToLatest = typeof fromBlock !== "number"
 
     const loop = async () => {
-      while (true) {
-        const result = await this.waitLogs({
-          ...opts,
-          fromBlock: nextblock
-        })
-
-        for (const entry of result.entries) {
-          fn(entry)
+      while (!canceled) {
+        if (isEth) {
+          ethLatestBlockNum = await (rpc as EthRPC).getBlockNumber()
+          if (typeof fromBlock !== "number") {
+            fromBlock = ethLatestBlockNum
+          }
         }
 
-        nextblock = result.nextblock
+        if (isEth && fetchToLatest) {
+          toBlock = ethLatestBlockNum
+        }
+
+        if (isEth) {
+          if (fromBlock >= toBlock) {
+            await sleep(ETH_HALF_ESTIMATED_AVERAGE_BLOCK_TIME)
+            continue
+          }
+        }
+
+        const result = await this.getLogs({
+          ...(opts as any),
+          fromBlock,
+          toBlock
+        })
+
+        if (isEth) {
+          const resultTypeSafe = result as IEthContractEventLog[]
+          for (const entry of resultTypeSafe) {
+            fn(entry as any)
+          }
+
+          fromBlock = ethLatestBlockNum + 1
+        } else {
+          const resultTypeSafe = result as IQtumContractEventLogs
+          for (const entry of resultTypeSafe.entries) {
+            fn(entry as any)
+          }
+          fromBlock = resultTypeSafe.nextblock
+        }
       }
     }
 
     loop()
+
+    // return a cancel function
+    return () => {
+      canceled = true
+    }
   }
 
   /**
    * Subscribe to contract's events, use EventsEmitter interface.
    */
-  public logEmitter(opts: IRPCWaitForLogsRequest = {}): EventEmitter {
+  public logEmitter(
+    opts: TypeRPC extends QtumRPC
+      ? IQtumRPCGetLogsRequest
+      : IEthRPCGetLogsRequest = {} as any
+  ): EventEmitter {
     const emitter = new EventEmitter()
 
     this.onLog((entry) => {
@@ -842,14 +1000,12 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
   ): TypeRPC extends QtumRPC
     ? IQtumTransactionReceipt
     : IEthTransactionReceipt {
-    // https://stackoverflow.com/a/34710102
-    // ...receiptNoLog will be a copy of receipt, without the `log` property
-
     const { rpc } = this
     let rawlogs: ITransactionLog[]
     let receiptNoLog:
       | Omit<IQtumRPCGetTransactionReceiptResult, "log">
       | Omit<IEthRPCGetTransactionReceiptResult, "logs">
+
     if (rpc instanceof QtumRPC) {
       const {
         log,

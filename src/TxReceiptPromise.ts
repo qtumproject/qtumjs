@@ -26,7 +26,7 @@ export type EthTxReceiptConfirmationHandler = (
 
 const EVENT_CONFIRM = "confirm"
 
-const HALF_ESTIMATED_AVERAGE_BLOCK_TIME = 7500
+const ETH_HALF_ESTIMATED_AVERAGE_BLOCK_TIME = 7500
 
 // tslint:disable-next-line:no-empty-interface
 export interface ITxReceiptConfirmOptions {
@@ -141,7 +141,7 @@ export class TxReceiptPromise<TypeRPC extends QtumRPC | EthRPC> {
     opts: ITxReceiptConfirmOptions = {}
   ): Promise<IEthRPCGetTransactionReceiptResult> {
     const { txid } = this
-    const { pollInterval = HALF_ESTIMATED_AVERAGE_BLOCK_TIME } = opts
+    const { pollInterval = ETH_HALF_ESTIMATED_AVERAGE_BLOCK_TIME } = opts
 
     const rpc = this._rpc as EthRPC
     let prevConfirmationCounter = 0

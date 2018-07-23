@@ -35,6 +35,7 @@ import {
 import { ITransactionLog } from "./rpcCommonTypes"
 import { sleep } from "./sleep"
 import { ICancelFunction, ICancellableEventEmitter } from "./EventListener"
+import { add0xPrefix } from "./convert"
 
 type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>
 
@@ -332,11 +333,11 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
     opts: IContractInitOptions = {}
   ) {
     this.methodMap = new MethodMap(info.abi)
-    this.address = info.address
+    const isQtum = this.rpc instanceof QtumRPC
+    this.address = isQtum ? info.address : add0xPrefix(info.address)
 
     this._logDecoder =
-      opts.logDecoder ||
-      new ContractLogDecoder(this.info.abi, this.rpc instanceof QtumRPC)
+      opts.logDecoder || new ContractLogDecoder(this.info.abi, isQtum)
 
     // this._useBigNumber = false
   }
@@ -935,10 +936,7 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
             toBlock = latestBlockNum
           }
 
-          if (
-            fromBlock > toBlock ||
-            (!isFirstFetch && fromBlock === toBlock)
-          ) {
+          if (fromBlock > toBlock || (!isFirstFetch && fromBlock === toBlock)) {
             await sleep(ETH_HALF_ESTIMATED_AVERAGE_BLOCK_TIME)
             continue
           }
@@ -950,10 +948,7 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
           // qtum waitforlogs will throw `Incorrect params(code: -8)`
           // if `fromBlock > toBlock` (including `toBlock === "latest"`)
           // therefor we need to make sure block `fromBlock` is mined
-          if (
-            typeof fromBlock === "number" &&
-            fromBlock > latestBlockNum
-          ) {
+          if (typeof fromBlock === "number" && fromBlock > latestBlockNum) {
             await sleep(2000)
             continue
           }

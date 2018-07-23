@@ -1,6 +1,6 @@
 import { RPCRaw } from "./RPCRaw"
 import { ITransactionLog, IPromiseCancel } from "./rpcCommonTypes"
-import { hexlify, hexStripZeros } from "./convert"
+import { hexlify, hexStripZeros, add0xPrefix, toNonNumberBlock } from "./convert"
 
 export interface IEthRPCSendTransactionRequest {
   /**
@@ -90,16 +90,16 @@ export interface IEthRPCGetTransactionResult {
  */
 export interface IEthRPCGetTransactionReceiptBase {
   blockHash: string
-  blockNumber: number
+  blockNumber: string
 
   transactionHash: string
-  transactionIndex: number
+  transactionIndex: string
 
   from: string
   to: string
 
-  cumulativeGasUsed: number
-  gasUsed: number
+  cumulativeGasUsed: string
+  gasUsed: string
 
   contractAddress?: string
 }
@@ -116,7 +116,7 @@ export interface IEthRPCGetTransactionReceiptResult
   status?: ETH_TRANSACTION_STATUS
 }
 
-export type typeBlockTags = number | "latest" | "pending" | "earliest"
+export type typeBlockTags = number | "latest" | "pending" | "earliest" | string
 
 export interface IEthRPCGetLogsRequest {
   /**
@@ -214,12 +214,11 @@ export class EthRPC extends RPCRaw {
   public async sendTransaction(
     req: IEthRPCSendTransactionRequest
   ): Promise<IEthRPCSendTransactionResult> {
-    const { to, data } = req
+    const { data } = req
     const { blockNumber: _, ...encodedReq } = await this.encodeReq(req)
 
     const args = [
       {
-        to,
         data,
         ...encodedReq
       }
@@ -232,12 +231,17 @@ export class EthRPC extends RPCRaw {
   }
 
   public async call(req: IEthRPCCallRequest): Promise<string> {
-    const { to, data } = req
-    const { blockNumber, nonce: _, ...encodedReq } = await this.encodeReq(req)
+    const { data, from } = req
+    const {
+      from: _from,
+      nonce: _nonce,
+      blockNumber,
+      ...encodedReq
+    } = await this.encodeReq(req, false)
     const args: any[] = [
       {
-        to,
         data,
+        from,
         ...encodedReq
       }
     ]
@@ -294,6 +298,10 @@ export class EthRPC extends RPCRaw {
     return this.rawCall("eth_accounts")
   }
 
+  public async getNetId(): Promise<string> {
+    return this.rawCall("net_version")
+  }
+
   public async getTransactionCount(
     address: string,
     block: typeBlockTags = "latest"
@@ -317,7 +325,27 @@ export class EthRPC extends RPCRaw {
   ): IPromiseCancel<IEthLogEntry[]> {
     const cancelTokenSource = this.cancelTokenSource()
 
-    const result = this.rawCall("eth_getLogs", [req], {
+    const fromBlock = toNonNumberBlock(req.fromBlock)
+    const toBlock = toNonNumberBlock(req.toBlock)
+    let address = req.address
+    if (typeof address === "string") {
+      address = add0xPrefix(address)
+    } else if (Array.isArray(address)) {
+      address = address.map((addr) => add0xPrefix(addr))
+    }
+
+    let topics = req.topics
+    if (Array.isArray(topics)) {
+      topics = topics.map((topic) => {
+        if (typeof topic === "string") {
+          return add0xPrefix(topic)
+        }
+
+        return topic
+      })
+    }
+
+    const result = this.rawCall("eth_getLogs", [{ fromBlock, toBlock, address, topics }], {
       cancelToken: cancelTokenSource.token
     }) as IPromiseCancel<any>
 
@@ -327,32 +355,34 @@ export class EthRPC extends RPCRaw {
   }
 
   private async encodeReq(
-    req: IEthRPCCallRequest | IEthRPCSendTransactionRequest
+    req: IEthRPCCallRequest | IEthRPCSendTransactionRequest,
+    isSend = true
   ): Promise<{
-    from: string
+    to: string
     gas: string
     gasPrice: string
+    from?: string
     value?: string
     nonce?: string
     blockNumber?: string
   }> {
     const {
+      to,
       gasLimit,
-      gasPrice: configGasPrice,
       nonce: configNonce,
       value: configValue
     } = req as IEthRPCSendTransactionRequest
     const { blockNumber: configBlockNumber } = req as IEthRPCCallRequest
     let from = req.from
-    if (!from) {
+    if (!from && isSend) {
       from = await this.getSender()
     }
-    if (!from) {
+    if (!from && isSend) {
       throw new Error("cannot get eth sender")
     }
 
-    let gasPrice = configGasPrice
-    if (!gasPrice) {
+    let gasPrice = req.gasPrice
+    if (gasPrice == null) {
       gasPrice = await this.getGasPrice()
     }
     gasPrice = hexStripZeros(hexlify(gasPrice))
@@ -371,10 +401,11 @@ export class EthRPC extends RPCRaw {
           : configBlockNumber
 
     return {
-      from,
-      value,
+      to: add0xPrefix(to),
       gas,
       gasPrice,
+      from,
+      value,
       nonce,
       blockNumber
     }

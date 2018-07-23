@@ -165,7 +165,7 @@ export class TxReceiptPromise<TypeRPC extends QtumRPC | EthRPC> {
 
       const receiptBlockNumber = receipt.blockNumber
 
-      const confirmationCounter = currentBlockNumber - receiptBlockNumber
+      const confirmationCounter = currentBlockNumber - Number(receiptBlockNumber)
       if (confirmationCounter === 0 && requiredConfirmation > 0) {
         // ignore fresh receipt
         await sleep(pollInterval)

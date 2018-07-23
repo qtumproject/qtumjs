@@ -396,12 +396,7 @@ export class EthRPC extends RPCRaw {
     const value =
       configValue == null ? undefined : hexStripZeros(hexlify(configValue))
 
-    const blockNumber =
-      configBlockNumber == null
-        ? undefined
-        : typeof configBlockNumber === "number"
-          ? hexStripZeros(hexlify(configBlockNumber))
-          : configBlockNumber
+    const blockNumber = toNonNumberBlock(configBlockNumber)
 
     return {
       to: add0xPrefix(to),

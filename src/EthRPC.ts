@@ -1,5 +1,6 @@
 import { RPCRaw } from "./RPCRaw"
 import { ITransactionLog, IPromiseCancel } from "./rpcCommonTypes"
+import { hexlify, hexStripZeros } from "./convert"
 
 export interface IEthRPCSendTransactionRequest {
   /**
@@ -25,7 +26,7 @@ export interface IEthRPCSendTransactionRequest {
   /**
    * gasLimit, default: 200000, max: 40000000
    */
-  gasLimit?: number
+  gasLimit?: number | string
 
   /**
    * Ethereum price per gas unit
@@ -213,26 +214,14 @@ export class EthRPC extends RPCRaw {
   public async sendTransaction(
     req: IEthRPCSendTransactionRequest
   ): Promise<IEthRPCSendTransactionResult> {
-    const { gasLimit, gasPrice: configGasPrice, ...ethArgs } = req
-    let from = req.from
-    if (!from) {
-      from = await this.getSender()
-    }
-    if (!from) {
-      throw new Error("cannot get eth sender")
-    }
-
-    let gasPrice = configGasPrice
-    if (!gasPrice) {
-      gasPrice = await this.getGasPrice()
-    }
+    const { to, data } = req
+    const { blockNumber: _, ...encodedReq } = await this.encodeReq(req)
 
     const args = [
       {
-        ...ethArgs,
-        from,
-        gas: gasLimit || DEFAULT_GAS_LIMIT,
-        gasPrice
+        to,
+        data,
+        ...encodedReq
       }
     ]
 
@@ -243,26 +232,13 @@ export class EthRPC extends RPCRaw {
   }
 
   public async call(req: IEthRPCCallRequest): Promise<string> {
-    const { gasLimit, gasPrice: configGasPrice, blockNumber, ...ethArgs } = req
-    let from = req.from
-    if (!from) {
-      from = await this.getSender()
-    }
-    if (!from) {
-      throw new Error("cannot get eth sender")
-    }
-
-    let gasPrice = configGasPrice
-    if (!gasPrice) {
-      gasPrice = await this.getGasPrice()
-    }
-
+    const { to, data } = req
+    const { blockNumber, nonce: _, ...encodedReq } = await this.encodeReq(req)
     const args: any[] = [
       {
-        ...ethArgs,
-        from,
-        gas: gasLimit || DEFAULT_GAS_LIMIT,
-        gasPrice
+        to,
+        data,
+        ...encodedReq
       }
     ]
 
@@ -348,5 +324,59 @@ export class EthRPC extends RPCRaw {
     return Object.assign(result, {
       cancel: cancelTokenSource.cancel.bind(cancelTokenSource)
     })
+  }
+
+  private async encodeReq(
+    req: IEthRPCCallRequest | IEthRPCSendTransactionRequest
+  ): Promise<{
+    from: string
+    gas: string
+    gasPrice: string
+    value?: string
+    nonce?: string
+    blockNumber?: string
+  }> {
+    const {
+      gasLimit,
+      gasPrice: configGasPrice,
+      nonce: configNonce,
+      value: configValue
+    } = req as IEthRPCSendTransactionRequest
+    const { blockNumber: configBlockNumber } = req as IEthRPCCallRequest
+    let from = req.from
+    if (!from) {
+      from = await this.getSender()
+    }
+    if (!from) {
+      throw new Error("cannot get eth sender")
+    }
+
+    let gasPrice = configGasPrice
+    if (!gasPrice) {
+      gasPrice = await this.getGasPrice()
+    }
+    gasPrice = hexStripZeros(hexlify(gasPrice))
+
+    const gas = hexStripZeros(hexlify(gasLimit || DEFAULT_GAS_LIMIT))
+    const nonce =
+      configNonce == null ? undefined : hexStripZeros(hexlify(configNonce))
+    const value =
+      configValue == null ? undefined : hexStripZeros(hexlify(configValue))
+
+    const blockNumber =
+      configBlockNumber == null
+        ? undefined
+        : typeof configBlockNumber === "number"
+          ? hexStripZeros(hexlify(configBlockNumber))
+          : configBlockNumber
+
+    return {
+      from,
+      value,
+      gas,
+      gasPrice,
+      nonce,
+      blockNumber
+    }
   }
 }

@@ -166,7 +166,7 @@ export interface IContractSendRequestOptions<T extends QtumRPC | EthRPC> {
   /**
    * gasLimit, default: 200000, max: 40000000
    */
-  gasLimit?: number
+  gasLimit?: number | string
 
   /**
    * Qtum price per gas unit, default: 0.00000001, min:0.00000001

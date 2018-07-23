@@ -374,10 +374,13 @@ export class EthRPC extends RPCRaw {
     } = req as IEthRPCSendTransactionRequest
     const { blockNumber: configBlockNumber } = req as IEthRPCCallRequest
     let from = req.from
-    if (!from && isSend) {
+    if (from != null) {
+      from = add0xPrefix(from)
+    } else if (isSend) {
       from = await this.getSender()
     }
-    if (!from && isSend) {
+
+    if (isSend && !from) {
       throw new Error("cannot get eth sender")
     }
 

@@ -34,6 +34,7 @@ import {
 } from "./EthRPC"
 import { ITransactionLog } from "./rpcCommonTypes"
 import { sleep } from "./sleep"
+import { ICancelFunction, ICancellableEventEmitter } from "./EventListener"
 
 type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>
 
@@ -910,32 +911,50 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
     opts: TypeRPC extends QtumRPC
       ? IQtumRPCGetLogsRequest
       : IEthRPCGetLogsRequest = {} as any
-  ) {
+  ): ICancelFunction {
     let fromBlock = opts.fromBlock || "latest"
     let toBlock = opts.toBlock || "latest"
 
     let canceled = false
-    let ethLatestBlockNum: number
+    let latestBlockNum: number
+    let isFirstFetch = true
     const { rpc } = this
     const isEth = rpc instanceof EthRPC
     const fetchToLatest = typeof fromBlock !== "number"
 
     const loop = async () => {
       while (!canceled) {
+        latestBlockNum = await rpc.getBlockNumber()
+
         if (isEth) {
-          ethLatestBlockNum = await (rpc as EthRPC).getBlockNumber()
           if (typeof fromBlock !== "number") {
-            fromBlock = ethLatestBlockNum
+            fromBlock = latestBlockNum
           }
-        }
 
-        if (isEth && fetchToLatest) {
-          toBlock = ethLatestBlockNum
-        }
+          if (fetchToLatest) {
+            toBlock = latestBlockNum
+          }
 
-        if (isEth) {
-          if (fromBlock >= toBlock) {
+          if (
+            fromBlock > toBlock ||
+            (!isFirstFetch && fromBlock === toBlock)
+          ) {
             await sleep(ETH_HALF_ESTIMATED_AVERAGE_BLOCK_TIME)
+            continue
+          }
+
+          if (isFirstFetch) {
+            isFirstFetch = false
+          }
+        } else {
+          // qtum waitforlogs will throw `Incorrect params(code: -8)`
+          // if `fromBlock > toBlock` (including `toBlock === "latest"`)
+          // therefor we need to make sure block `fromBlock` is mined
+          if (
+            typeof fromBlock === "number" &&
+            fromBlock > latestBlockNum
+          ) {
+            await sleep(2000)
             continue
           }
         }
@@ -952,7 +971,7 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
             fn(entry as any)
           }
 
-          fromBlock = ethLatestBlockNum + 1
+          fromBlock = latestBlockNum + 1
         } else {
           const resultTypeSafe = result as IQtumContractEventLogs
           for (const entry of resultTypeSafe.entries) {
@@ -978,15 +997,17 @@ export class Contract<TypeRPC extends QtumRPC | EthRPC> {
     opts: TypeRPC extends QtumRPC
       ? IQtumRPCGetLogsRequest
       : IEthRPCGetLogsRequest = {} as any
-  ): EventEmitter {
+  ): ICancellableEventEmitter {
     const emitter = new EventEmitter()
 
-    this.onLog((entry) => {
+    const cancel = this.onLog((entry) => {
       const key = (entry.event && entry.event.type) || "?"
       emitter.emit(key, entry)
     }, opts)
 
-    return emitter
+    return Object.assign(emitter, {
+      cancel
+    })
   }
 
   private get logDecoder(): ContractLogDecoder {

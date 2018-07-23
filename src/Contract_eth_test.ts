@@ -4,7 +4,7 @@ import { assert } from "chai"
 import { repoData, ethRpc, assertThrow } from "./test"
 import { Contract } from "./Contract"
 
-describe("Contract", () => {
+describe("Contract<EthRPC>", () => {
   // don't act as sender
   const {
     sender: _,

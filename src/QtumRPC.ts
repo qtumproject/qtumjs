@@ -410,4 +410,8 @@ export class QtumRPC extends RPCRaw {
   public async getHexAddress(address: string): Promise<string> {
     return this.rawCall("gethexaddress", [address])
   }
+
+  public async getBlockNumber(): Promise<number> {
+    return this.rawCall("getblockcount")
+  }
 }

@@ -3,7 +3,7 @@ import { assert } from "chai"
 import { QtumRPC } from "../QtumRPC"
 import { EthRPC } from "../EthRPC"
 
-export const rpcURL = "http://qtum:test@localhost:5889"
+export const rpcURL = "http://qtum:test@localhost:3889"
 
 export const rpc = new QtumRPC(rpcURL)
 

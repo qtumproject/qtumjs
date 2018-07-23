@@ -96,27 +96,45 @@ export class EventListener<TypeRPC extends QtumRPC | EthRPC> {
 
     let promiseCancel: (() => void)
     let canceled = false
-    let ethLatestBlockNum: number
+    let latestBlockNum: number
+    let isFirstFetch = true
     const { rpc } = this
     const isEth = rpc instanceof EthRPC
     const fetchToLatest = typeof fromBlock !== "number"
 
     const asyncLoop = async () => {
       while (!canceled) {
+        latestBlockNum = await rpc.getBlockNumber()
+
         if (isEth) {
-          ethLatestBlockNum = await (rpc as EthRPC).getBlockNumber()
           if (typeof fromBlock !== "number") {
-            fromBlock = ethLatestBlockNum
+            fromBlock = latestBlockNum
           }
-        }
 
-        if (isEth && fetchToLatest) {
-          toBlock = ethLatestBlockNum
-        }
+          if (fetchToLatest) {
+            toBlock = latestBlockNum
+          }
 
-        if (isEth) {
-          if (fromBlock >= toBlock) {
+          if (
+            fromBlock > toBlock ||
+            (!isFirstFetch && fromBlock === toBlock)
+          ) {
             await sleep(ETH_HALF_ESTIMATED_AVERAGE_BLOCK_TIME)
+            continue
+          }
+
+          if (isFirstFetch) {
+            isFirstFetch = false
+          }
+        } else {
+          // qtum waitforlogs will throw `Incorrect params(code: -8)`
+          // if `fromBlock > toBlock` (including `toBlock === "latest"`)
+          // therefor we need to make sure block `fromBlock` is mined
+          if (
+            typeof fromBlock === "number" &&
+            fromBlock > latestBlockNum
+          ) {
+            await sleep(300)
             continue
           }
         }
@@ -137,7 +155,7 @@ export class EventListener<TypeRPC extends QtumRPC | EthRPC> {
             fn(entry as any)
           }
 
-          fromBlock = ethLatestBlockNum + 1
+          fromBlock = latestBlockNum + 1
         } else {
           const resultTypeSafe = result as IQtumContractEventLogs
           for (const entry of resultTypeSafe.entries) {

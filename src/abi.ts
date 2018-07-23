@@ -53,7 +53,7 @@ export class ContractLogDecoder {
   private _decoder: LogDecoder
 
   constructor(public abi: IABIMethod[], no0xPrefix = false) {
-    this._decoder = logDecoder(abi, no0xPrefix)
+    this._decoder = logDecoder(abi, true, no0xPrefix)
   }
 
   public decode(rawlog: ILogItem): IDecodedSolidityEvent | null {

@@ -96,7 +96,7 @@ export class RPCRaw {
 
       if (eresult.error) {
         const { code, message } = eresult.error
-        throw new Error(`[${code}] ${message}`)
+        throw new Error(`${method}(${params}): [${code}] ${message}`)
       } else {
         throw new Error(String(eresult))
       }

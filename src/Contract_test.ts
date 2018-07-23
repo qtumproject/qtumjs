@@ -4,7 +4,7 @@ import { assert } from "chai"
 import { repoData, rpc, assertThrow } from "./test"
 import { Contract } from "./Contract"
 
-describe("Contract", () => {
+describe("Contract<QtumRPC>", () => {
   // don't act as sender
   const {
     sender: _,

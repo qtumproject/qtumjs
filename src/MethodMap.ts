@@ -1,4 +1,4 @@
-import { IABIMethod } from "./index"
+import { IABIMethod } from "./ethjs-abi"
 
 /**
  * Build an index of a contract's ABI definitions.

@@ -1,41 +1,37 @@
-import {
-  IABIMethod,
-  IETHABI,
-  ILogItem,
-  LogDecoder,
-} from "./ethjs-abi"
+import { IABIMethod, IETHABI, ILogItem, LogDecoder } from "./ethjs-abi"
 
 const {
   decodeParams,
   encodeMethod,
-  logDecoder,
-  configure: configureABI,
+  logDecoder
 } = require("qtumjs-ethjs-abi") as IETHABI
 
-configureABI({ noHexStringPrefix: true })
-
-import {
-  ITransactionLog,
-} from "./QtumRPC"
-
-export function encodeInputs(method: IABIMethod, args: any[] = []): string {
-  const calldata = encodeMethod(method, args)
+export function encodeInputs(
+  method: IABIMethod,
+  args: any[] = [],
+  no0xPrefix = false
+): string {
+  const calldata = encodeMethod(method, args, no0xPrefix)
   return calldata
 }
 
-export function decodeOutputs(method: IABIMethod, outputData: string): any[] {
+export function decodeOutputs(
+  method: IABIMethod,
+  outputData: string,
+  no0xPrefix = false
+): any[] {
   const types = method.outputs.map((output) => output.type)
 
-  // FIXME: would be nice to explicitly request for Array result
-  const result = decodeParams(types, outputData)
+  const result = decodeParams(
+    [],
+    types,
+    outputData,
+    undefined,
+    Array(types.length),
+    no0xPrefix
+  )
 
-  // Convert result to normal array...
-  const values = []
-  for (let i = 0; i < types.length; i++) {
-    values[i] = result[i]
-  }
-
-  return values
+  return result
 }
 
 /**
@@ -56,8 +52,8 @@ export interface IDecodedSolidityEvent {
 export class ContractLogDecoder {
   private _decoder: LogDecoder
 
-  constructor(public abi: IABIMethod[]) {
-    this._decoder = logDecoder(abi)
+  constructor(public abi: IABIMethod[], no0xPrefix = false) {
+    this._decoder = logDecoder(abi, true, no0xPrefix)
   }
 
   public decode(rawlog: ILogItem): IDecodedSolidityEvent | null {

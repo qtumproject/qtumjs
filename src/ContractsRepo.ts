@@ -3,6 +3,7 @@ import { IABIMethod } from "./ethjs-abi"
 import { QtumRPC } from "./QtumRPC"
 import { ContractLogDecoder } from "./abi"
 import { EventListener } from "./EventListener"
+import { EthRPC } from "./EthRPC"
 
 export interface IABIDefs {
   [key: string]: {
@@ -41,18 +42,18 @@ export interface IContractsRepoData {
 /**
  * ContractsRepo contains the ABI definitions of all known contracts
  */
-export class ContractsRepo {
+export class ContractsRepo<TypeRPC extends QtumRPC | EthRPC> {
   /**
    * A logDecoder that knows about events defined in all known contracts.
    */
   public logDecoder: ContractLogDecoder
 
-  constructor(private rpc: QtumRPC, private repoData: IContractsRepoData) {
+  constructor(private rpc: TypeRPC, private repoData: IContractsRepoData) {
     const eventABIs = this.allEventABIs()
-    this.logDecoder = new ContractLogDecoder(eventABIs)
+    this.logDecoder = new ContractLogDecoder(eventABIs, rpc instanceof QtumRPC)
   }
 
-  public contract(name: string): Contract {
+  public contract(name: string): Contract<TypeRPC> {
     const info = this.repoData.contracts[name]
     if (!info) {
       throw new Error(`cannot find contract: ${name}`)
@@ -62,7 +63,7 @@ export class ContractsRepo {
     return new Contract(this.rpc, info, { logDecoder: this.logDecoder })
   }
 
-  public eventListener(): EventListener {
+  public eventListener(): EventListener<TypeRPC> {
     return new EventListener(this.rpc, this.logDecoder)
   }
 

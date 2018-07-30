@@ -1,12 +1,10 @@
 import "mocha"
 import { assert } from "chai"
 
-import { repoData, rpc, assertThrow } from "./test"
-import { Contract } from "./Contract"
+import { repoData } from "./test"
 import { MethodMap } from "./MethodMap"
 
 describe("MethodMap", () => {
-  // don't act as sender
   const methods = repoData.contracts["test/contracts/MethodOverloading.sol"].abi
 
   const map = new MethodMap(methods)
@@ -25,7 +23,6 @@ describe("MethodMap", () => {
       constant: false,
       anonymous: false,
     })
-    // console.log(method)
   })
 
   it("can find method by method signature", () => {

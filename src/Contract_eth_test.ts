@@ -1,17 +1,17 @@
 import "mocha"
 import { assert } from "chai"
 
-import { repoData, rpc, assertThrow } from "./test"
+import { repoData, ethRpc, assertThrow } from "./test"
 import { Contract } from "./Contract"
 
-describe("Contract<QtumRPC>", () => {
+describe("Contract<EthRPC>", () => {
   // don't act as sender
   const {
     sender: _,
     ...info
-  } = repoData.contracts["test/contracts/Methods.sol"]
+  } = repoData.contracts.eth_Methods
 
-  const contract = new Contract(rpc, info)
+  const contract = new Contract(ethRpc, info)
 
   describe("#call", async () => {
     it("calls a method and get returned value", async () => {
@@ -19,7 +19,7 @@ describe("Contract<QtumRPC>", () => {
       assert.hasAllKeys(result, [
         "logs",
         "outputs",
-        "rawResult",
+        "rawResult"
       ])
 
       const {
@@ -27,11 +27,7 @@ describe("Contract<QtumRPC>", () => {
         rawResult,
       } = result
 
-      assert.hasAllKeys(rawResult, [
-        "address",
-        "executionResult",
-        "transactionReceipt",
-      ])
+      assert.isString(rawResult)
       assert.isArray(outputs)
       assert.isNumber(outputs[0].toNumber())
     })
@@ -55,7 +51,7 @@ describe("Contract<QtumRPC>", () => {
     })
 
     describe("method overloading", () => {
-      const overload = new Contract(rpc, repoData.contracts["test/contracts/MethodOverloading.sol"])
+      const overload = new Contract(ethRpc, repoData.contracts.eth_MethodOverloading)
 
       it("calls a method and get returned value", async () => {
         let result
@@ -85,7 +81,7 @@ describe("Contract<QtumRPC>", () => {
 
   describe("ABI encoding", async () => {
     it("can encode address[]", async () => {
-      const logs = new Contract(rpc, repoData.contracts["test/contracts/ArrayArguments.sol"])
+      const logs = new Contract(ethRpc, repoData.contracts.eth_ArrayArguments)
 
       const calldata = logs.encodeParams("takeArray", [[
         "aa00000000000000000000000000000000000011",
@@ -95,7 +91,7 @@ describe("Contract<QtumRPC>", () => {
       assert.equal(
         calldata,
         // tslint:disable-next-line:max-line-length
-        `ee3b88ea00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000aa00000000000000000000000000000000000011000000000000000000000000bb00000000000000000000000000000000000022`,
+        `0xee3b88ea00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000aa00000000000000000000000000000000000011000000000000000000000000bb00000000000000000000000000000000000022`,
       )
 
     })
@@ -107,12 +103,9 @@ describe("Contract<QtumRPC>", () => {
 
       const tx = await contract.send("setFoo", [v])
 
-      assert.equal(tx.confirmations, 0)
-
-      await rpc.rawCall("generate", [1])
-
-      const receipt = await tx.confirm(1, (r) => {
-        assert.equal(r.confirmations, 1)
+      // testrpc will not automatic mining, so we can't use tx.confirm(1) here
+      const receipt = await tx.confirm(0, (_r) => {
+        //
       })
 
       assert.hasAllKeys(receipt, [
@@ -122,12 +115,13 @@ describe("Contract<QtumRPC>", () => {
         "transactionIndex",
         "from",
         "to",
-        "excepted",
         "cumulativeGasUsed",
         "gasUsed",
         "contractAddress",
         "logs",
         "rawlogs",
+        "logsBloom",
+        "status"
       ])
 
       const result = await contract.call("getFoo")
@@ -142,11 +136,12 @@ describe("Contract<QtumRPC>", () => {
   })
 
   describe("event logs", () => {
-    const logs = new Contract(rpc, repoData.contracts["test/contracts/Logs.sol"])
+    const logs = new Contract(ethRpc, repoData.contracts.eth_Logs)
 
     it("decodes logs for call", async () => {
-      const result = await logs.call("emitFooEvent", ["abc"])
-      assert.deepEqual(result.logs, [
+      const tx = await logs.send("emitFooEvent", ["abc"])
+      const receipt = await tx.confirm(0)
+      assert.deepEqual(receipt.logs, [
         {
           type: "FooEvent",
           a: "abc",

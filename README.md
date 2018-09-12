@@ -4,7 +4,7 @@ See [documentation](https://qtumproject.github.io/qtumjs-doc/).
 
 See [中文 API 文档](https://qtumproject.github.io/qtumjs-doc-cn/).
 
-See [companion tutorial](https://github.com/qtumproject/qtumbook/blob/master/part2/erc20-js.md).
+See [companion tutorial](https://github.com/qtumproject/qtumbook/blob/master/en/part2/erc20-js.md).
 
 # Install
 

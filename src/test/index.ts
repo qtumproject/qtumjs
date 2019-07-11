@@ -2,7 +2,7 @@ import { assert } from "chai"
 
 import { QtumRPC } from "../QtumRPC"
 
-export const rpcURL = "http://qtum:test@localhost:5889"
+export const rpcURL = process.env.QTUM_RPC || "http://qtum:test@localhost:3889"
 
 export const rpc = new QtumRPC(rpcURL)
 
@@ -30,7 +30,10 @@ export async function assertThrow(
     report(errorThrown)
   }
 
-  assert(errorThrown != null, msg ? `Expects error to be thrown: ${msg}` : "Expects error to be thrown")
+  assert(
+    errorThrown != null,
+    msg ? `Expects error to be thrown: ${msg}` : "Expects error to be thrown",
+  )
 
   // assert.isNotNull(errorThrown, )
 }

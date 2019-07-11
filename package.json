@@ -8,6 +8,7 @@
     "test": "mocha lib/*_test.js",
     "build": "tsc",
     "watch": "tsc -w",
+    "lint": "tslint  --project tsconfig.json",
     "build:umd": "webpack --config webpack.config.js"
   },
   "npmName": "qtumjs",

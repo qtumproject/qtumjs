@@ -1,9 +1,8 @@
 import "mocha"
 import { assert } from "chai"
 
-import { repoData as repoData, rpc, assertThrow } from "./test"
+import { repoData, rpc, assertThrow } from "./test"
 import { ContractsRepo } from "./ContractsRepo"
-import { IContractInfo } from "./Contract";
 
 describe("ContractsRepo", () => {
   // don't act as sender
@@ -13,7 +12,10 @@ describe("ContractsRepo", () => {
     const contract = repo.contract("test/contracts/LogOfDependantContract.sol")
 
     assert.isNotNull(contract)
-    assert.strictEqual(contract.info, repoData.contracts["test/contracts/LogOfDependantContract.sol"])
+    assert.strictEqual(
+      contract.info,
+      repoData.contracts["test/contracts/LogOfDependantContract.sol"],
+    )
   })
 
   it("can instantiate a contract with an log decoder that knows about all events", async () => {
@@ -25,6 +27,9 @@ describe("ContractsRepo", () => {
 
     assert.isNotNull(fooEvent)
     assert.deepEqual(fooEvent[0], "Foo!")
-    assert.deepEqual(fooEvent, { data: "Foo!", type: "LogOfDependantContractChildEvent" })
+    assert.deepEqual(fooEvent, {
+      data: "Foo!",
+      type: "LogOfDependantContractChildEvent",
+    })
   })
 })

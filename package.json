@@ -33,7 +33,7 @@
     "@types/node": "^8.0.31",
     "chai": "^4.1.2",
     "chai-as-promised": "^7.1.1",
-    "mocha": "^5.0.0",
+    "mocha": "^6.1.4",
     "ts-loader": "^6.0.4",
     "tslint": "^5.7.0",
     "typescript": "^3.5.3",

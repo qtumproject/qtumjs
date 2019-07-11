@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.5.8;
 
 import "./LogOfDependantContractChild.sol";
 
@@ -6,7 +6,7 @@ import "./LogOfDependantContractChild.sol";
 contract LogOfDependantContract {
   LogOfDependantContractChild testContract;
 
-  function LogOfDependantContract() public {
+  constructor() public {
     testContract = new LogOfDependantContractChild();
   }
 

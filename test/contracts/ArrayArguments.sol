@@ -1,7 +1,7 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.5.8;
 
 // https://github.com/qtumproject/qtumjs/issues/4
 contract ArrayArguments {
-  function takeArray(address[] addresses) public {
+  function takeArray(address[] memory addresses) public {
   }
 }

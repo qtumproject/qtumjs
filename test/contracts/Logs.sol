@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.5.8;
 
 contract Logs {
 
@@ -6,12 +6,12 @@ contract Logs {
   event BarEvent(string a);
   event BazEvent(string a);
 
-  function emitFooEvent(string a) public returns(string) {
+  function emitFooEvent(string memory a) public returns(string memory) {
     emit FooEvent(a);
     return a;
   }
 
-  function emitMultipleEvents(string a) public returns(string) {
+  function emitMultipleEvents(string memory a) public returns(string memory) {
     emit FooEvent(a);
     emit BarEvent(a);
     emit BazEvent(a);

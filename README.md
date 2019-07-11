@@ -53,10 +53,6 @@ docker run -it --rm \
 
 Configure QTUM_RPC for deployment tool:
 
-```
-export QTUM_RPC=http://qtum:test@localhost:3889
-```
-
 Enter into container:
 
 ```
@@ -66,7 +62,8 @@ docker exec -it qtumjs sh
 Generate initial blocks:
 
 ```
-qcli generate 600
+qcli importprivkey cMbgxCJrTYUqgcmiC1berh5DFrtY1KeU4PXZ6NZxgenniF1mXCRk
+qcli generatetoaddress 600 qUbxboqjBRp96j3La8D1RYkyqx5uQbJPoW
 
 qcli getbalance
 
@@ -76,6 +73,9 @@ qcli getbalance
 Deploy test contracts:
 
 ```
+export QTUM_RPC=http://qtum:test@localhost:3889
+export QTUM_SENDER=qUbxboqjBRp96j3La8D1RYkyqx5uQbJPoW
+
 sh deploy-test-contracts.sh
 ```
 

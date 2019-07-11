@@ -5,7 +5,7 @@
   "types": "./lib/index.d.ts",
   "license": "MIT",
   "scripts": {
-    "test": "mocha  lib/*_test.js",
+    "test": "mocha lib/*_test.js",
     "build": "tsc",
     "watch": "tsc -w",
     "build:umd": "webpack --config webpack.config.js"

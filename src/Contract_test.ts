@@ -105,7 +105,7 @@ describe("Contract", () => {
 
       assert.equal(tx.confirmations, 0)
 
-      await rpc.rawCall("generate", [1])
+      await rpc.provider.rawCall("generate", [1])
 
       const receipt = await tx.confirm(1, (r) => {
         assert.equal(r.confirmations, 1)

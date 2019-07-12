@@ -7,7 +7,7 @@ import { rpc, assertThrow } from "./test"
 // import { } from "mocha"
 describe("QtumRPC", () => {
   it("can make RPC call", async () => {
-    const info = await rpc.rawCall("getinfo")
+    const info = await rpc.provider.rawCall("getinfo")
     assert.isNotEmpty(info)
     assert.hasAllKeys(info, [
       "version",
@@ -33,13 +33,13 @@ describe("QtumRPC", () => {
 
   it("throws error if method is not found", async () => {
     await assertThrow(async () => {
-      return rpc.rawCall("unknown-method")
+      return rpc.provider.rawCall("unknown-method")
     })
   })
 
   it("throws error if calling method using invalid params", async () => {
     await assertThrow(async () => {
-      return rpc.rawCall("getinfo", [1, 2])
+      return rpc.provider.rawCall("getinfo", [1, 2])
     })
   })
 

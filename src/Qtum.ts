@@ -1,4 +1,6 @@
+import { IProvider } from "./Provider"
 import { QtumRPC } from "./QtumRPC"
+import { QtumRPCRaw } from "./QtumRPCRaw"
 import { IContractsRepoData, ContractsRepo } from "./ContractsRepo"
 import { Contract } from "./Contract"
 
@@ -8,12 +10,15 @@ import { Contract } from "./Contract"
  * @param providerURL URL of the qtumd RPC service.
  * @param repoData Information about Solidity contracts.
  */
-export class Qtum extends QtumRPC {
+export class Qtum {
   private repo: ContractsRepo
+  private rawRpc: QtumRPC
 
   constructor(providerURL: string, repoData?: IContractsRepoData) {
-    super(providerURL)
-    this.repo = new ContractsRepo(this, {
+    const provider: IProvider = new QtumRPCRaw(providerURL)
+
+    this.rawRpc = new QtumRPC(provider)
+    this.repo = new ContractsRepo(this.rawRpc, {
       // massage the repoData by providing empty default properties
       contracts: {},
       libraries: {},

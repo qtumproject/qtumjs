@@ -1,17 +1,15 @@
 import { IABIMethod, IETHABI, LogDecoder } from "./ethjs-abi"
 import { EventEmitter } from "eventemitter3"
 
-const {
-  logDecoder,
-} = require("qtumjs-ethjs-abi") as IETHABI
+const { logDecoder } = require("qtumjs-ethjs-abi") as IETHABI
+
+import { decodeOutputs, encodeInputs, ContractLogDecoder } from "./abi"
 
 import {
-  decodeOutputs,
-  encodeInputs,
-  ContractLogDecoder,
-} from "./abi"
-
-import { IDecodedSolidityEvent, ITransactionLog, IRPCSearchLogsRequest } from "./index"
+  IDecodedSolidityEvent,
+  ITransactionLog,
+  IRPCSearchLogsRequest,
+} from "./index"
 import {
   IExecutionResult,
   IRPCCallContractResult,
@@ -49,8 +47,10 @@ export type IContractSendConfirmationHandler = (
  * @param n Number of confirmations to wait for
  * @param handler The callback function invoked for each additional confirmation
  */
-export type IContractSendConfirmFunction = (n?: number, handler?: IContractSendConfirmationHandler) =>
-  Promise<IContractSendReceipt>
+export type IContractSendConfirmFunction = (
+  n?: number,
+  handler?: IContractSendConfirmationHandler,
+) => Promise<IContractSendReceipt>
 
 /**
  * Result of contract send.
@@ -64,7 +64,7 @@ export interface IContractSendResult extends IRPCGetTransactionResult {
   /**
    * Wait for transaction confirmations.
    */
-  confirm: IContractSendConfirmFunction,
+  confirm: IContractSendConfirmFunction
 }
 
 /**
@@ -113,7 +113,7 @@ export interface IContractCallResult extends IRPCCallContractResult {
   /**
    * ABI-decoded logs
    */
-  logs: Array<IDecodedSolidityEvent | null>
+  logs: (IDecodedSolidityEvent | null)[]
 }
 
 /**
@@ -159,12 +159,12 @@ export interface IContractSendReceipt extends IRPCGetTransactionReceiptBase {
   /**
    * logs decoded using ABI
    */
-  logs: IDecodedSolidityEvent[],
+  logs: IDecodedSolidityEvent[]
 
   /**
    * undecoded logs
    */
-  rawlogs: ITransactionLog[],
+  rawlogs: ITransactionLog[]
 }
 
 export interface IContractLog<T> extends ILogEntry {
@@ -220,7 +220,6 @@ export interface IContractInitOptions {
  * Contract represents a Smart Contract deployed on the blockchain.
  */
 export class Contract {
-
   /**
    * The contract's address as hex160
    */
@@ -239,7 +238,11 @@ export class Contract {
    *      address, owner address, and ABI definition for methods and types.
    * @param opts - init options
    */
-  constructor(private rpc: QtumRPC, public info: IContractInfo, opts: IContractInitOptions = {}) {
+  constructor(
+    private rpc: QtumRPC,
+    public info: IContractInfo,
+    opts: IContractInitOptions = {},
+  ) {
     this.methodMap = new MethodMap(info.abi)
     this.address = info.address
 
@@ -266,10 +269,10 @@ export class Contract {
    * @param args arguments
    */
   public async rawCall(
-    method: string, args: any[] = [],
-    opts: IContractCallRequestOptions = {}):
-    Promise<IRPCCallContractResult> {
-
+    method: string,
+    args: any[] = [],
+    opts: IContractCallRequestOptions = {},
+  ): Promise<IRPCCallContractResult> {
     const calldata = this.encodeParams(method, args)
 
     return this.rpc.callContract({
@@ -292,8 +295,8 @@ export class Contract {
   public async call(
     method: string,
     args: any[] = [],
-    opts: IContractCallRequestOptions = {}):
-    Promise<IContractCallResult> {
+    opts: IContractCallRequestOptions = {},
+  ): Promise<IContractCallResult> {
     const r = await this.rawCall(method, args, opts)
 
     const exception = r.executionResult.excepted
@@ -368,7 +371,9 @@ export class Contract {
   ): Promise<Date> {
     const result = await this.return(method, args, opts)
     if (typeof result !== "number") {
-      throw Error("Cannot convert return value to Date. Expect return value to be a number.")
+      throw Error(
+        "Cannot convert return value to Date. Expect return value to be a number.",
+      )
     }
 
     return new Date(result * 1000)
@@ -393,7 +398,9 @@ export class Contract {
     const value = await this.return(method, args, opts)
 
     if (typeof value !== "number") {
-      throw Error("Cannot convert return value to currency unit. Expect return value to be a number.")
+      throw Error(
+        "Cannot convert return value to currency unit. Expect return value to be a number.",
+      )
     }
 
     let base: number = 0
@@ -416,7 +423,7 @@ export class Contract {
 
     const satoshi = 1e-8
 
-    return value * satoshi / (10 ** base)
+    return (value * satoshi) / 10 ** base
   }
 
   public async returnAs<T>(
@@ -440,8 +447,8 @@ export class Contract {
   public async rawSend(
     method: string,
     args: any[],
-    opts: IContractSendRequestOptions = {}):
-    Promise<IRPCSendToContractResult> {
+    opts: IContractSendRequestOptions = {},
+  ): Promise<IRPCSendToContractResult> {
     // TODO opts: gas limit, gas price, sender address
     const methodABI = this.methodMap.findMethod(method, args)
     if (methodABI == null) {
@@ -546,7 +553,9 @@ export class Contract {
    * for logs from the beginning of the blockchain.
    * @param req
    */
-  public async logs(req: IRPCWaitForLogsRequest = {}): Promise<IContractEventLogs> {
+  public async logs(
+    req: IRPCWaitForLogsRequest = {},
+  ): Promise<IContractEventLogs> {
     return this.waitLogs({
       fromBlock: 0,
       toBlock: "latest",
@@ -558,7 +567,9 @@ export class Contract {
    * Get contract event logs. Long-poll wait if no log is found.
    * @param req (optional) IRPCWaitForLogsRequest
    */
-  public async waitLogs(req: IRPCWaitForLogsRequest = {}): Promise<IContractEventLogs> {
+  public async waitLogs(
+    req: IRPCWaitForLogsRequest = {},
+  ): Promise<IContractEventLogs> {
     const filter = req.filter || {}
     if (!filter.addresses) {
       filter.addresses = [this.address]
@@ -586,7 +597,10 @@ export class Contract {
   /**
    * Subscribe to contract's events, using callback interface.
    */
-  public onLog(fn: (entry: IContractEventLog) => void, opts: IRPCWaitForLogsRequest = {}) {
+  public onLog(
+    fn: (entry: IContractEventLog) => void,
+    opts: IRPCWaitForLogsRequest = {},
+  ) {
     let nextblock = opts.fromBlock || "latest"
 
     const loop = async () => {
@@ -625,7 +639,9 @@ export class Contract {
     return this._logDecoder
   }
 
-  private _makeSendTxReceipt(receipt: IRPCGetTransactionReceiptResult): IContractSendReceipt {
+  private _makeSendTxReceipt(
+    receipt: IRPCGetTransactionReceiptResult,
+  ): IContractSendReceipt {
     // https://stackoverflow.com/a/34710102
     // ...receiptNoLog will be a copy of receipt, without the `log` property
     const { log: rawlogs, ...receiptNoLog } = receipt

@@ -1,26 +1,26 @@
 import { QtumRPCRaw } from "./QtumRPCRaw"
 
 export interface IGetInfoResult {
-  version: number,
-  protocolversion: number,
-  walletversion: number,
-  balance: number,
-  stake: number,
-  blocks: number,
-  timeoffset: number,
-  connections: number,
-  proxy: string,
+  version: number
+  protocolversion: number
+  walletversion: number
+  balance: number
+  stake: number
+  blocks: number
+  timeoffset: number
+  connections: number
+  proxy: string
   difficulty: {
-    "proof-of-work": number,
-    "proof-of-stake": number,
-  },
-  testnet: boolean,
-  moneysupply: number,
-  keypoololdest: number,
-  keypoolsize: number,
-  paytxfee: number,
-  relayfee: number,
-  errors: string,
+    "proof-of-work": number
+    "proof-of-stake": number
+  }
+  testnet: boolean
+  moneysupply: number
+  keypoololdest: number
+  keypoolsize: number
+  paytxfee: number
+  relayfee: number
+  errors: string
 }
 
 export interface IRPCSendToContractRequest {
@@ -64,15 +64,15 @@ export interface IRPCSendToContractResult {
   /**
    * The transaction id.
    */
-  txid: string,
+  txid: string
   /**
    * QTUM address of the sender.
    */
-  sender: string,
+  sender: string
   /**
    * ripemd-160 hash of the sender.
    */
-  hash160: string,
+  hash160: string
 }
 
 export interface IRPCCallContractRequest {
@@ -93,26 +93,26 @@ export interface IRPCCallContractRequest {
 }
 
 export interface IExecutionResult {
-  gasUsed: number,
-  excepted: string,
-  newAddress: string,
-  output: string,
-  codeDeposit: number,
-  gasRefunded: number,
-  depositSize: number,
-  gasForDeposit: number,
+  gasUsed: number
+  excepted: string
+  newAddress: string
+  output: string
+  codeDeposit: number
+  gasRefunded: number
+  depositSize: number
+  gasForDeposit: number
 }
 
 export interface IRPCCallContractResult {
   address: string
-  executionResult: IExecutionResult,
+  executionResult: IExecutionResult
   transactionReceipt: {
-    stateRoot: string,
-    gasUsed: string,
-    bloom: string,
+    stateRoot: string
+    gasUsed: string
+    bloom: string
 
     // FIXME: Need better typing
-    log: any[],
+    log: any[]
   }
 }
 
@@ -137,21 +137,21 @@ export interface IRPCGetTransactionRequest {
  * Basic information about a transaction submitted to the network.
  */
 export interface IRPCGetTransactionResult {
-  amount: number,
-  fee: number,
-  confirmations: number,
-  blockhash: string,
-  blockindex: number,
-  blocktime: number,
-  txid: string,
+  amount: number
+  fee: number
+  confirmations: number
+  blockhash: string
+  blockindex: number
+  blocktime: number
+  txid: string
   // FIXME: Need better typing
-  walletconflicts: any[],
-  time: number,
-  timereceived: number,
-  "bip125-replaceable": "no" | "yes" | "unknown",
+  walletconflicts: any[]
+  time: number
+  timereceived: number
+  "bip125-replaceable": "no" | "yes" | "unknown"
   // FIXME: Need better typing
   details: any[]
-  hex: string,
+  hex: string
 }
 
 export interface IRPCGetTransactionReceiptRequest {
@@ -180,7 +180,8 @@ export interface IRPCGetTransactionReceiptBase {
   contractAddress: string
 }
 
-export interface IRPCGetTransactionReceiptResult extends IRPCGetTransactionReceiptBase {
+export interface IRPCGetTransactionReceiptResult
+  extends IRPCGetTransactionReceiptBase {
   log: ITransactionLog[]
 }
 
@@ -201,27 +202,27 @@ export interface IRPCWaitForLogsRequest {
   /**
    * The block number to start looking for logs.
    */
-  fromBlock?: number | "latest",
+  fromBlock?: number | "latest"
 
   /**
    * The block number to stop looking for logs. If null, will wait indefinitely into the future.
    */
-  toBlock?: number | "latest",
+  toBlock?: number | "latest"
 
   /**
    * Filter conditions for logs. Addresses and topics are specified as array of hexadecimal strings
    */
-  filter?: ILogFilter,
+  filter?: ILogFilter
 
   /**
    * Minimal number of confirmations before a log is returned
    */
-  minconf?: number,
+  minconf?: number
 }
 
 export interface ILogFilter {
-  addresses?: string[],
-  topics?: Array<string | null>,
+  addresses?: string[]
+  topics?: (string | null)[]
 }
 
 /**
@@ -240,9 +241,9 @@ export interface ILogEntry extends IRPCGetTransactionReceiptBase {
 }
 
 export interface IRPCWaitForLogsResult {
-  entries: ILogEntry[],
-  count: number,
-  nextblock: number,
+  entries: ILogEntry[]
+  count: number
+  nextblock: number
 }
 
 export interface IRPCSearchLogsRequest {
@@ -267,7 +268,7 @@ export interface IRPCSearchLogsRequest {
    * An array of values which must each appear in the log entries.
    * The order is important, if you want to leave topics out use null, e.g. ["null", "0x00..."].
    */
-  topics?: Array<string | null>
+  topics?: (string | null)[]
 
   /**
    * Minimal number of confirmations before a log is returned
@@ -289,7 +290,9 @@ export class QtumRPC extends QtumRPCRaw {
     return this.rawCall("getinfo")
   }
 
-  public sendToContract(req: IRPCSendToContractRequest): Promise<IRPCSendToContractResult> {
+  public sendToContract(
+    req: IRPCSendToContractRequest,
+  ): Promise<IRPCSendToContractResult> {
     const vals = {
       ...sendToContractRequestDefaults,
       ...req,
@@ -310,11 +313,10 @@ export class QtumRPC extends QtumRPCRaw {
     return this.rawCall("sendtocontract", args)
   }
 
-  public callContract(req: IRPCCallContractRequest): Promise<IRPCCallContractResult> {
-    const args = [
-      req.address,
-      req.datahex,
-    ]
+  public callContract(
+    req: IRPCCallContractRequest,
+  ): Promise<IRPCCallContractResult> {
+    const args = [req.address, req.datahex]
 
     if (req.senderAddress) {
       args.push(req.senderAddress)
@@ -323,10 +325,10 @@ export class QtumRPC extends QtumRPCRaw {
     return this.rawCall("callcontract", args)
   }
 
-  public getTransaction(req: IRPCGetTransactionRequest): Promise<IRPCGetTransactionResult> {
-    const args: any[] = [
-      req.txid,
-    ]
+  public getTransaction(
+    req: IRPCGetTransactionRequest,
+  ): Promise<IRPCGetTransactionResult> {
+    const args: any[] = [req.txid]
 
     if (req.include_watchonly) {
       args.push(req.include_watchonly)
@@ -341,12 +343,17 @@ export class QtumRPC extends QtumRPCRaw {
     return this.rawCall("gettransaction", args)
   }
 
-  public async getTransactionReceipt(req: IRPCGetTransactionRequest): Promise<IRPCGetTransactionReceiptResult | null> {
+  public async getTransactionReceipt(
+    req: IRPCGetTransactionRequest,
+  ): Promise<IRPCGetTransactionReceiptResult | null> {
     // The raw RPC API returns [] if tx id doesn't exist or not mined yet
     // When transaction is mined, the API returns [receipt]
     //
     // We'll do the unwrapping here.
-    const result: IRPCGetTransactionReceiptResult[] = await this.rawCall("gettransactionreceipt", [req.txid])
+    const result: IRPCGetTransactionReceiptResult[] = await this.rawCall(
+      "gettransactionreceipt",
+      [req.txid],
+    )
 
     if (result.length === 0) {
       return null
@@ -358,24 +365,25 @@ export class QtumRPC extends QtumRPCRaw {
   /**
    * Long-poll request to get logs. Cancel the returned promise to terminate polling early.
    */
-  public waitforlogs(req: IRPCWaitForLogsRequest = {}): IPromiseCancel<IRPCWaitForLogsResult> {
-    const args = [
-      req.fromBlock,
-      req.toBlock,
-      req.filter,
-      req.minconf,
-    ]
+  public waitforlogs(
+    req: IRPCWaitForLogsRequest = {},
+  ): IPromiseCancel<IRPCWaitForLogsResult> {
+    const args = [req.fromBlock, req.toBlock, req.filter, req.minconf]
 
     const cancelTokenSource = this.cancelTokenSource()
 
-    const p = this.rawCall("waitforlogs", args, { cancelToken: cancelTokenSource.token })
+    const p = this.rawCall("waitforlogs", args, {
+      cancelToken: cancelTokenSource.token,
+    })
 
     return Object.assign(p, {
       cancel: cancelTokenSource.cancel.bind(cancelTokenSource),
     }) as any
   }
 
-  public async searchlogs(_req: IRPCSearchLogsRequest = {}): Promise<IRPCSearchLogsResult> {
+  public async searchlogs(
+    _req: IRPCSearchLogsRequest = {},
+  ): Promise<IRPCSearchLogsResult> {
     const searchlogsDefaults = {
       fromBlock: "latest",
       toBlock: -1,

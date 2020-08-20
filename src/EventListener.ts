@@ -13,8 +13,7 @@ export interface ICancellableEventEmitter extends EventEmitter {
 export class EventListener {
   // TODO filter out unparseable logs
 
-  constructor(private rpc: QtumRPC, private logDecoder: ContractLogDecoder) {
-  }
+  constructor(private rpc: QtumRPC, private logDecoder: ContractLogDecoder) {}
 
   /**
    * Get contract event logs. Long-poll wait if no log is found. Returns a cancel
@@ -22,7 +21,9 @@ export class EventListener {
    *
    * @param req (optional) IRPCWaitForLogsRequest
    */
-  public waitLogs(req: IRPCWaitForLogsRequest = {}): IPromiseCancel<IContractEventLogs> {
+  public waitLogs(
+    req: IRPCWaitForLogsRequest = {},
+  ): IPromiseCancel<IContractEventLogs> {
     const filter = req.filter || {}
 
     const logPromise = this.rpc.waitforlogs({
@@ -49,10 +50,13 @@ export class EventListener {
   /**
    * Subscribe to contract's events, using callback interface.
    */
-  public onLog(fn: (entry: IContractEventLog) => void, opts: IRPCWaitForLogsRequest = {}): ICancelFunction {
+  public onLog(
+    fn: (entry: IContractEventLog) => void,
+    opts: IRPCWaitForLogsRequest = {},
+  ): ICancelFunction {
     let nextblock = opts.fromBlock || "latest"
 
-    let promiseCancel: (() => void)
+    let promiseCancel: () => void
     let canceled = false
 
     const asyncLoop = async () => {
@@ -87,7 +91,6 @@ export class EventListener {
         promiseCancel()
       }
     }
-
   }
 
   /**
@@ -105,5 +108,4 @@ export class EventListener {
       cancel,
     })
   }
-
 }

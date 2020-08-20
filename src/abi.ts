@@ -1,9 +1,4 @@
-import {
-  IABIMethod,
-  IETHABI,
-  ILogItem,
-  LogDecoder,
-} from "./ethjs-abi"
+import { IABIMethod, IETHABI, ILogItem, LogDecoder } from "./ethjs-abi"
 
 const {
   decodeParams,
@@ -14,9 +9,7 @@ const {
 
 configureABI({ noHexStringPrefix: true })
 
-import {
-  ITransactionLog,
-} from "./QtumRPC"
+import { ITransactionLog } from "./QtumRPC"
 
 export function encodeInputs(method: IABIMethod, args: any[] = []): string {
   const calldata = encodeMethod(method, args)

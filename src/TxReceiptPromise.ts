@@ -17,16 +17,13 @@ const EVENT_CONFIRM = "confirm"
 
 // tslint:disable-next-line:no-empty-interface
 export interface ITxReceiptConfirmOptions {
-  pollInterval?: number,
+  pollInterval?: number
 }
 
 export class TxReceiptPromise {
   private _emitter: EventEmitter
 
-  constructor(
-    private _rpc: QtumRPC,
-    public txid: string,
-  ) {
+  constructor(private _rpc: QtumRPC, public txid: string) {
     this._emitter = new EventEmitter()
   }
 

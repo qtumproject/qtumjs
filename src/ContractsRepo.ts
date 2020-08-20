@@ -6,7 +6,7 @@ import { EventListener } from "./EventListener"
 
 export interface IABIDefs {
   [key: string]: {
-    abi: IABIMethod[],
+    abi: IABIMethod[]
   }
 }
 
@@ -18,14 +18,14 @@ export interface IContractsRepoData {
    * Information about deployed contracts
    */
   contracts: {
-    [key: string]: IContractInfo,
-  },
+    [key: string]: IContractInfo
+  }
 
   /**
    * Information about deployed libraries
    */
   libraries: {
-    [key: string]: IContractInfo,
+    [key: string]: IContractInfo
   }
 
   /**
@@ -33,8 +33,8 @@ export interface IContractsRepoData {
    */
   related: {
     [key: string]: {
-      abi: IABIMethod[],
-    },
+      abi: IABIMethod[]
+    }
   }
 }
 
@@ -72,11 +72,7 @@ export class ContractsRepo {
   private allEventABIs(): IABIMethod[] {
     const allEventABIs: IABIMethod[] = []
 
-    const {
-      contracts,
-      libraries,
-      related,
-    } = this.repoData
+    const { contracts, libraries, related } = this.repoData
 
     if (contracts) {
       mergeDefs(contracts)

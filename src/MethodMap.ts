@@ -4,7 +4,6 @@ import { IABIMethod } from "./index"
  * Build an index of a contract's ABI definitions.
  */
 export class MethodMap {
-
   private methods: { [key: string]: IABIMethod } = {}
 
   constructor(_methods: IABIMethod[]) {
@@ -17,7 +16,9 @@ export class MethodMap {
 
       const key = `${method.name}#${method.inputs.length}`
 
-      const sig = `${method.name}(${method.inputs.map((input) => input.type).join(",")})`
+      const sig = `${method.name}(${method.inputs
+        .map((input) => input.type)
+        .join(",")})`
 
       if (this.methods[key]) {
         // Detected ambiguity for this arity. User must use method signature
@@ -47,7 +48,10 @@ export class MethodMap {
    *   The method name is `foo`.
    *   The method signature is `foo(uint, uint)`
    */
-  public findMethod(selector: string, args: any[] = []): IABIMethod | undefined {
+  public findMethod(
+    selector: string,
+    args: any[] = [],
+  ): IABIMethod | undefined {
     // Find method by method signature
     const method = this.methods[selector]
     if (method) {

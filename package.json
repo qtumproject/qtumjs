@@ -31,13 +31,13 @@
     "@types/chai": "^4.1.1",
     "@types/chai-as-promised": "^7.1.0",
     "@types/mocha": "^2.2.46",
-    "@types/node": "^8.0.31",
+    "@types/node": "^14.6.0",
     "chai": "^4.1.2",
     "chai-as-promised": "^7.1.1",
     "mocha": "^6.1.4",
-    "ts-loader": "^6.0.4",
+    "ts-loader": "^8.0.2",
     "tslint": "^5.18.0",
-    "typescript": "^3.5.3",
+    "typescript": "^3.9.7",
     "webpack": "^4.35.3",
     "webpack-cli": "^3.3.5"
   }

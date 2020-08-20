@@ -1,4 +1,10 @@
-import axios, { AxiosInstance, AxiosPromise, AxiosRequestConfig, CancelToken, CancelTokenSource } from "axios"
+import axios, {
+  AxiosInstance,
+  AxiosPromise,
+  AxiosRequestConfig,
+  CancelToken,
+  CancelTokenSource,
+} from "axios"
 const URL = require("url-parse")
 
 import { sleep } from "./sleep"
@@ -18,7 +24,7 @@ export interface IAuthorization {
 }
 
 export interface IRPCCallOption {
-  cancelToken?: CancelToken,
+  cancelToken?: CancelToken
 }
 
 export class QtumRPCRaw {
@@ -87,10 +93,7 @@ export class QtumRPCRaw {
       const eresult = await res.data
 
       if (eresult.error) {
-        const {
-          code,
-          message,
-        } = eresult.error
+        const { code, message } = eresult.error
         throw new Error(`[${code}] ${message}`)
       } else {
         throw new Error(String(eresult))
@@ -105,7 +108,10 @@ export class QtumRPCRaw {
     return this._api.post("/", rpcCall)
   }
 
-  private async authCall(authID: string, rpcCall: IJSONRPCRequest): Promise<any> {
+  private async authCall(
+    authID: string,
+    rpcCall: IJSONRPCRequest,
+  ): Promise<any> {
     // long-poll an authorization until its state changes
     const res = await this._api.get(`/api/authorizations/${authID}/onchange`)
 

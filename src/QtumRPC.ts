@@ -1,26 +1,46 @@
 import { QtumRPCRaw } from "./QtumRPCRaw"
+import { Hash } from "crypto"
 
-export interface IGetInfoResult {
-  version: number
-  protocolversion: number
-  walletversion: number
-  balance: number
-  stake: number
+
+// {
+//   chain: 'regtest',
+//   blocks: 1876,
+//   headers: 1876,
+//   bestblockhash: '65c1656096558d6d1f8a1ee23c6adecc1be528d1fc2db162851a7cacb4bb5c14',
+//   difficulty: 4.656542373906925e-10,
+//   moneysupply: 37520000,
+//   mediantime: 1597917184,
+//   verificationprogress: 1,
+//   initialblockdownload: false,
+//   chainwork: '0000000000000000000000000000000000000000000000000000000000000eaa',
+//   size_on_disk: 812854,
+//   pruned: false,
+//   softforks: {
+//     bip34: { type: 'buried', active: true, height: 0 },
+//     bip66: { type: 'buried', active: true, height: 0 },
+//     bip65: { type: 'buried', active: true, height: 0 },
+//     csv: { type: 'buried', active: true, height: 432 },
+//     segwit: { type: 'buried', active: true, height: 0 },
+//     testdummy: { type: 'bip9', bip9: [Object], height: 432, active: true }
+//   },
+//   warnings: ''
+// }
+
+export interface IGetBlockChainInfoResult {
+  chain: string
   blocks: number
-  timeoffset: number
-  connections: number
-  proxy: string
-  difficulty: {
-    "proof-of-work": number
-    "proof-of-stake": number
-  }
-  testnet: boolean
+  headers: number
+  bestblockhash: string
+  difficulty: number
   moneysupply: number
-  keypoololdest: number
-  keypoolsize: number
-  paytxfee: number
-  relayfee: number
-  errors: string
+  mediantime: number
+  verificationprogress: number
+  initialblockdownload: boolean
+  chainwork: string
+  size_on_disk: number
+  pruned: boolean
+  softforks: any
+  warnings: string
 }
 
 export interface IRPCSendToContractRequest {
@@ -292,8 +312,8 @@ export interface IPromiseCancel<T> extends Promise<T> {
 export class QtumRPC extends QtumRPCRaw {
   private _hasTxWaitSupport: boolean | undefined
 
-  public getInfo(): Promise<IGetInfoResult> {
-    return this.rawCall("getinfo")
+  public getBlockChainInfo(): Promise<IGetBlockChainInfoResult> {
+    return this.rawCall("getblockchaininfo")
   }
 
   public sendToContract(

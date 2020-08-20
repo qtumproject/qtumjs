@@ -128,6 +128,12 @@ export interface IRPCGetTransactionRequest {
   include_watchonly?: boolean
 
   /**
+   *  (boolean, optional, default=false) Whether to include a `decoded` field containing the decoded transaction (equivalent to RPC decodera
+wtransaction)
+   */
+  verbose?: boolean
+
+  /**
    * (optional, default=0) Wait for enough confirmations before returning
    */
   waitconf?: number
@@ -332,6 +338,12 @@ export class QtumRPC extends QtumRPCRaw {
 
     if (req.include_watchonly) {
       args.push(req.include_watchonly)
+    } else {
+      args.push(false)
+    }
+
+    if (req.verbose) {
+      args.push(!!req.verbose)
     } else {
       args.push(false)
     }

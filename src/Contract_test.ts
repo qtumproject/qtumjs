@@ -1,7 +1,7 @@
 import "mocha"
 import { assert } from "chai"
 
-import { repoData, rpc, assertThrow } from "./test"
+import { repoData, rpc, assertThrow, generateBlock } from "./test"
 import { Contract } from "./Contract"
 
 describe("Contract", () => {
@@ -109,7 +109,7 @@ describe("Contract", () => {
 
       assert.equal(tx.confirmations, 0)
 
-      await rpc.rawCall("generate", [1])
+      await generateBlock(1)
 
       const receipt = await tx.confirm(1, (r) => {
         assert.equal(r.confirmations, 1)
@@ -123,10 +123,12 @@ describe("Contract", () => {
         "from",
         "to",
         "excepted",
+        "exceptedMessage",
         "cumulativeGasUsed",
         "gasUsed",
         "contractAddress",
         "logs",
+        "outputIndex",
         "rawlogs",
       ])
 

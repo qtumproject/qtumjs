@@ -67,6 +67,8 @@ export class QtumRPCRaw {
       id: this.idNonce++,
     }
 
+    // console.log(rpcCall)
+
     let res = await this.makeRPCCall(rpcCall)
 
     if (res.status === 402) {
@@ -94,7 +96,7 @@ export class QtumRPCRaw {
 
       if (eresult.error) {
         const { code, message } = eresult.error
-        throw new Error(`[${code}] ${message}`)
+        throw new Error(`RPC Error: [${code}] ${message}`)
       } else {
         throw new Error(String(eresult))
       }

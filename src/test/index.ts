@@ -9,7 +9,8 @@ export const rpc = new QtumRPC(rpcURL)
 export const repoData = require("../../solar.development.json")
 
 export async function generateBlock(n = 1) {
-  return rpc.rawCall("generate", [n])
+  // generate to a throwaway address
+  return rpc.rawCall("generatetoaddress", [n, "qUdPrkrdbmWD5m21mKEr5euZpFDsQHWzsG"])
 }
 
 export async function assertThrow(

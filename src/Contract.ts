@@ -1,6 +1,10 @@
 import { IABIMethod, IETHABI, LogDecoder } from "./ethjs-abi"
 import { EventEmitter } from "eventemitter3"
 
+import debug from "debug"
+
+const log = debug("qtumjs:contract")
+
 const { logDecoder } = require("qtumjs-ethjs-abi") as IETHABI
 
 import { decodeOutputs, encodeInputs, ContractLogDecoder } from "./abi"
@@ -273,6 +277,8 @@ export class Contract {
     args: any[] = [],
     opts: IContractCallRequestOptions = {},
   ): Promise<IRPCCallContractResult> {
+    log("call", method, args, opts)
+
     const calldata = this.encodeParams(method, args)
 
     return this.rpc.callContract({
@@ -515,6 +521,7 @@ export class Contract {
     args: any[] = [],
     opts: IContractSendRequestOptions = {},
   ): Promise<IContractSendResult> {
+    log("send", method, args, opts)
     const methodABI = this.methodMap.findMethod(method, args)
     if (methodABI == null) {
       throw new Error(`Unknown method to send: ${method}`)

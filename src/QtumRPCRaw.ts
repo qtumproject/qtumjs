@@ -7,6 +7,10 @@ import axios, {
 } from "axios"
 const URL = require("url-parse")
 
+import debug from "debug"
+
+const log = debug("qtumjs:rpc")
+
 import { sleep } from "./sleep"
 
 export interface IJSONRPCRequest {
@@ -67,7 +71,10 @@ export class QtumRPCRaw {
       id: this.idNonce++,
     }
 
-    // console.log(rpcCall)
+    log("%O", {
+      method,
+      params,
+    })
 
     let res = await this.makeRPCCall(rpcCall)
 

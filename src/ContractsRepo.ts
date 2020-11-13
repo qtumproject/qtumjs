@@ -52,12 +52,15 @@ export class ContractsRepo {
     this.logDecoder = new ContractLogDecoder(eventABIs)
   }
 
-  public contract(name: string): Contract {
-    const info = this.repoData.contracts[name]
-    if (!info) {
-      throw new Error(`cannot find contract: ${name}`)
-    }
+  public contract(name: string, info?: IContractInfo): Contract {
 
+    if (info == null) {
+      info = this.repoData.contracts[name]
+      if (!info) {
+        throw new Error(`cannot find contract: ${name}`)
+      }
+    }
+    
     // Instantiate the contract with a log decoder that can handle all known events
     return new Contract(this.rpc, info, { logDecoder: this.logDecoder })
   }

@@ -153,6 +153,8 @@ export interface IContractCallRequestOptions {
    * The quantum address that will be used as sender.
    */
   senderAddress?: string
+  gasLimit?: number
+  amount?: number
 }
 
 /**
@@ -304,6 +306,8 @@ export class Contract {
     opts: IContractCallRequestOptions = {},
   ): Promise<IContractCallResult> {
     const r = await this.rawCall(method, args, opts)
+
+    // console.log("call result", r)
 
     const exception = r.executionResult.excepted
     if (exception !== "None") {

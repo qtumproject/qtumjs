@@ -110,6 +110,9 @@ export interface IRPCCallContractRequest {
    * The sender address hex string
    */
   senderAddress?: string
+
+  gasLimit?: number
+  amount?: number
 }
 
 export interface IExecutionResult {
@@ -342,11 +345,11 @@ export class QtumRPC extends QtumRPCRaw {
   public callContract(
     req: IRPCCallContractRequest,
   ): Promise<IRPCCallContractResult> {
-    const args = [req.address, req.datahex]
+    const args: any[] = [req.address, req.datahex]
 
-    if (req.senderAddress) {
-      args.push(req.senderAddress)
-    }
+    args.push(req.senderAddress || "")
+    args.push(req.gasLimit || 0)
+    args.push(req.amount || 0)
 
     return this.rawCall("callcontract", args)
   }

@@ -1,6 +1,6 @@
 import { QtumRPC } from "./QtumRPC"
 import { IContractsRepoData, ContractsRepo } from "./ContractsRepo"
-import { Contract } from "./Contract"
+import { Contract, IContractInfo } from "./Contract"
 
 /**
  * The `Qtum` class is an instance of the `qtumjs` API.
@@ -30,7 +30,7 @@ export class Qtum extends QtumRPC {
    *
    * @param name The name of a deployed contract
    */
-  public contract(name: string): Contract {
-    return this.repo.contract(name)
+  public contract(name: string, info?: IContractInfo): Contract {
+    return this.repo.contract(name, info)
   }
 }

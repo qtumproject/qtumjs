@@ -372,6 +372,7 @@ export class QtumRPC extends QtumRPCRaw {
     }
 
     if (req.waitconf) {
+      args.push(false);
       args.push(req.waitconf)
     }
 
